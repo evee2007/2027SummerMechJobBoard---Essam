@@ -95,6 +95,7 @@ textarea.tall{min-height:180px}
 .rdoc h4{font:normal 15px/1.2 inherit;font-family:inherit;font-variant:small-caps;border-bottom:1px solid #000;margin:10px 0 4px;padding-bottom:1px}
 .rdoc .rr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.rdoc .ri{font-style:italic}.rdoc p{margin:1px 0}.rdoc ul{margin:1px 0 5px;padding-left:22px}
 .fit{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-size:14.5px;background:var(--card)}.fit p{margin:3px 0}
+.noai{border:2px solid var(--bad);background:var(--badSoft);color:var(--ink);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-weight:600;font-size:15px}.noai p{margin:0}
 .ldoc{font:15px/1.55 Georgia,serif;color:#000;background:#fff;padding:8px 6px}.ldoc p{margin:0 0 10px}
 .doc:has(.rdoc),.doc:has(.ldoc){background:#fff}
 details.ai{margin-top:12px}details.ai summary{min-height:40px}
@@ -160,6 +161,7 @@ details.ai{margin-top:12px}details.ai summary{min-height:40px}
   <ul class="jobs" id="list"></ul>
   <div class="foot">
     <p><strong>How it's sorted:</strong> jobs with a deadline first (soonest at top), then Canadian roles, then oldest postings, since many close once they get enough applicants.</p>
+    <p><strong>"⚠ says no AI":</strong> shown when a job description you paste asks applicants not to use AI or to write in their own words, or when you flag a job yourself from its Tailor panel. For those, write the cover letter yourself; the Claude rewrite is turned off for them.</p>
     <p><strong>Co-op roles:</strong> postings with "co-op" in the title usually need you enrolled in a school co-op program (TMU's starts in 3rd year), so they're hidden by default. Untick "Hide co-op roles" to see them; one that doesn't mention a school co-op requirement may still be worth applying to.</p>
     <p><strong>2nd-year fit:</strong> "needs 3rd year+" means the posting asks for more school or co-op experience than a 2nd-year student has; those are hidden by default. "Stretch" means it leans toward upper years (often 12 to 16-month co-ops) but is worth a try with good projects. Most 4-month summer internships take 2nd years.</p>
     <p><strong>Reading the tags:</strong> "check posting" means the link is a company careers search or the listing came from an aggregator, so confirm the role is still open and is a Summer 2027 term. "US citizens only (likely)" marks ITAR or defense roles that usually can't hire a Canadian citizen. Other US internships need a J-1 intern visa, which the employer sponsors; ask the recruiter early.</p>
@@ -264,6 +266,8 @@ const HAVE = [[/solidworks/i, "SolidWorks"], [/onshape/i, "Onshape"], [/matlab/i
   [/root cause/i, "root cause analysis"], [/repair/i, "repair"], [/maintenance/i, "maintenance"], [/inspect/i, "inspection"], [/pump/i, "pumps"], [/motor/i, "motors"], [/sheet ?metal/i, "sheet metal"],
   [/3d print|additive/i, "3D printing"], [/assembl/i, "assembly"], [/customer|client/i, "customer service"], [/stress|load/i, "load / stress analysis"], [/design/i, "design"], [/cad\b|model/i, "CAD modelling"],
   [/power tools|hand tools/i, "power tools"], [/test/i, "testing"], [/team/i, "teamwork"], [/water|plumbing|fluid/i, "water / fluid systems"]];
+const NOAI_RE = /(?:not|n't|never|prohibit\w*|discourag\w*|avoid|without|refrain from|may not|must not|disqualif\w*|reject\w*|flag\w*|detect\w*)[^.]{0,90}\b(?:AI|A\.I\.|artificial intelligence|ChatGPT|generative|gen ?AI|LLM|large language model|AI[- ]generated|AI[- ]written|AI tools)\b|\b(?:AI|artificial intelligence|ChatGPT|generative AI|AI[- ]generated|AI tools)\b[^.]{0,90}(?:not (?:be )?(?:permitted|allowed|accepted)|prohibited|disqualif\w*|will be rejected|is not acceptable|should not be used|discouraged)|\bown words\b|written by (?:you|the applicant|yourself)|authentic(?:ally)? (?:written|in your own)/i;
+const noAI = (j, jd) => !!((state[j.id] && state[j.id].noai) || j.noai || NOAI_RE.test(jd || (state[j.id] && state[j.id].jd) || ""));
 function readPosting(j, jd) {
   const title = j.role, body = (j.note || "") + " " + (jd || "");
   const cnt = (re, s) => (s.match(new RegExp(re.source, "gi")) || []).length;
@@ -437,7 +441,18 @@ function tailorPanel(j) {
   const doc = el("div", "doc"); const tools = el("div", "row");
   const copyB = el("button", "btn", "Copy text"), pdfB = el("button", "btn apply", "Save as PDF"); copyB.type = pdfB.type = "button";
   const msg = el("span", "status"); msg.setAttribute("aria-live", "polite"); tools.append(pdfB, copyB, msg);
-  const fit = el("div"); box.append(fit, seg, doc, tools);
+  const warn = el("div", "noai"); const flagB = el("button", "btn", ""); flagB.type = "button";
+  const drawWarn = () => {
+    const on = noAI(j, jd.value);
+    warn.replaceChildren();
+    if (on) warn.append(el("p", null, "⚠ This posting asks applicants not to use AI or to write in their own words. Write your cover letter yourself: use the preview below only as a checklist of which experiences to mention, not as text to copy."));
+    const manual = !!(state[j.id] && state[j.id].noai);
+    flagB.textContent = manual ? "Unflag \"says no AI\"" : "Flag: posting says no AI";
+    warn.hidden = !on; 
+  };
+  flagB.onclick = () => { const x = state[j.id] || {}; x.noai = !x.noai; state[j.id] = x; save(); drawWarn(); render(); };
+  const fit = el("div"); box.append(warn, fit, seg, doc, tools);
+  const flagRow = el("div", "row"); flagRow.append(flagB, el("span", "status", "Spotted a no-AI line in the posting? Flag it so this job shows a warning."));
   let t = tailorData(j, jd.value);
   const cur = () => {
     const ai = (state[j.id] || {}).tailored;
@@ -445,12 +460,13 @@ function tailorPanel(j) {
     if (which === "letter") { const lt = letterText(j, t, contactInfo()); return { html: '<div class="ldoc">' + lt.split("\n\n").map(p => "<p>" + esc(p).replace(/\n/g, "<br>") + "</p>").join("") + "</div>", text: lt }; }
     return { html: resumeHTML(t, contactInfo()), text: resumeText(t, contactInfo()) };
   };
-  const draw = () => { fit.innerHTML = fitHTML(t); [b1, b2, b3].forEach((b, i) => b.setAttribute("aria-pressed", String(["resume", "letter", "ai"][i] === which))); doc.innerHTML = cur().html; };
+  const draw = () => { drawWarn(); fit.innerHTML = fitHTML(t); [b1, b2, b3].forEach((b, i) => b.setAttribute("aria-pressed", String(["resume", "letter", "ai"][i] === which))); doc.innerHTML = cur().html; };
   b1.onclick = () => { which = "resume"; draw(); }; b2.onclick = () => { which = "letter"; draw(); }; b3.onclick = () => { which = "ai"; draw(); };
   jd.oninput = () => { const x = state[j.id] || {}; x.jd = jd.value; state[j.id] = x; save(); t = tailorData(j, jd.value); draw(); };
   copyB.onclick = async () => { try { await navigator.clipboard.writeText(cur().text); msg.textContent = "Copied."; } catch (e) { msg.textContent = "Copy blocked; select the text instead."; } };
   pdfB.onclick = () => { const nm = RES.name.replace(/\s+/g, "") + "_" + (which === "letter" ? "CoverLetter" : "Resume") + "_" + j.company.replace(/[^A-Za-z0-9]+/g, ""); printDoc(cur().html, nm); msg.textContent = "In the print window choose 'Save as PDF'."; };
   draw();
+  box.append(flagRow);
   // optional Claude rewrite
   const det = el("details", "ai"); const sm = el("summary", null, "Optional: have Claude rewrite it more closely"); det.append(sm);
   const row = el("div", "row"); const status = el("span", "status"); status.setAttribute("aria-live", "polite");
@@ -462,9 +478,10 @@ function tailorPanel(j) {
   box.append(det);
   const master = () => (prof.resume && prof.resume.trim()) ? prof.resume : resumeText(tailorData(j, ""), contactInfo());
   const store = text => { const x = state[j.id] || {}; x.tailored = Object.assign(split(text), { date: new Date().toISOString().slice(0, 10) }); state[j.id] = x; save(); which = "ai"; draw(); };
-  cp.onclick = async () => { const p = buildPrompt(j, jd.value, master()); try { await navigator.clipboard.writeText(p); status.textContent = "Copied. Paste it into a new claude.ai chat."; } catch (e) { paste.value = p; status.textContent = "Copy blocked; the prompt is in the box below."; } };
+  cp.onclick = async () => { if (noAI(j, jd.value)) { status.textContent = "This posting says no AI, so the Claude rewrite is turned off for it."; return; } const p = buildPrompt(j, jd.value, master()); try { await navigator.clipboard.writeText(p); status.textContent = "Copied. Paste it into a new claude.ai chat."; } catch (e) { paste.value = p; status.textContent = "Copy blocked; the prompt is in the box below."; } };
   keep.onclick = () => { if (!paste.value.includes("===COVER LETTER===")) { status.textContent = "That reply is missing the ===COVER LETTER=== marker."; return; } store(paste.value); paste.value = ""; status.textContent = "Saved; see the Claude version tab."; };
   gen.onclick = async () => {
+    if (noAI(j, jd.value)) { status.textContent = "This posting says no AI, so the Claude rewrite is turned off for it."; return; }
     if (!prof.key) { status.textContent = "No API key in setup. Use Copy prompt instead, or add a key."; return; }
     gen.disabled = true; status.textContent = "Writing… (about 30 seconds)";
     try {
@@ -529,6 +546,7 @@ function card(j) {
     m.append(el("span", "chip due" + (n <= 7 ? " soon" : ""), n < 0 ? "deadline passed " + j.deadline : n === 0 ? "due today" : "due " + j.deadline + " · " + n + "d"));
   }
   if (j.usp) m.append(el("span", "chip usp", "US citizens only (likely)"));
+  if (noAI(j)) m.append(el("span", "chip usp", "⚠ says no AI"));
   if (j.pick === 1) m.append(el("span", "chip top", "★ top match"));
   if (j.pick === 2) m.append(el("span", "chip ok", "good match"));
   if (j.yr === "no") m.append(el("span", "chip usp", "needs 3rd year+"));
