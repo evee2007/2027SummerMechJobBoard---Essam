@@ -197,14 +197,14 @@ const RES = {
   skills: [
     { label: "Technical Skills", items: [["SolidWorks", "cad design"], ["Onshape", "cad design"], ["3D part and assembly modelling", "cad design"], ["mechanical system design", "design motors"], ["sheet metal design", "sheetmetal design manufacturing"], ["design for 3D printing (nozzle size and tolerances)", "design manufacturing"], ["concept sketching", "design"]] },
     { label: "Tools & Software", items: [["MATLAB", "analysis software"], ["C", "software motors"], ["Microsoft Excel", "inspection"], ["Word", ""], ["PowerPoint", ""]] },
-    { label: "Hands-on", items: [["Equipment diagnostics and repair", "repair maintenance equipment"], ["motor and pump replacement", "repair motors fluids"], ["refurbishment", "repair manufacturing"], ["power tools", "equipment"], ["customer service", "customer"]] }
+    { label: "Hands-on", items: [["equipment diagnostics and repair", "repair maintenance equipment"], ["motor and pump replacement", "repair motors fluids"], ["refurbishment", "repair manufacturing"], ["power tools", "equipment"], ["customer service", "customer"]] }
   ],
   sections: [
     { key: "design", title: "Design Teams", entries: [
       { org: "Toronto Autonomous Systems Collective (TASC)", dates: "October 2026 – Present", role: "Drivetrain & Chassis Design Team Member",
-        story: "On TASC's drivetrain and chassis team, I designed the rover's sheet metal motor housing and bracket and built the full SolidWorks assembly myself. I cut the motor's cantilever moment arm with a sleeve bracket and gusset, mapped the load paths, and kept every part buildable in-house with a jigsaw and drill press.",
+        story: "On TASC's drivetrain and chassis team, I designed the rover's sheet metal motor housing and mounting bracket and independently built the full SolidWorks assembly. I cut the motor's cantilever moment arm with a sleeve bracket and gusset, mapped the load paths, and kept every part buildable in-house with a jigsaw and drill press.",
         bullets: [
-          ["Designed the rover's sheet metal motor housing and bracket, building the full SolidWorks assembly myself", "design cad sheetmetal vehicle"],
+          ["Designed the rover's sheet metal motor housing and mounting bracket, and independently built the full SolidWorks assembly", "design cad sheetmetal vehicle"],
           ["Cut the motor's cantilever moment arm by placing the wheel close to the suspension leg, using a sleeve bracket around the leg and a triangular gusset to resist bending from terrain loads", "design analysis vehicle"],
           ["Mapped load paths through sleeve, gusset and housing; specified M4/M5 through-bolts two diameters from edges", "analysis design"],
           ["Kept parts buildable in-house (jigsaw, drill press, bolted not welded) with a removable back plate for servicing", "manufacturing design maintenance sheetmetal"]] },
@@ -337,11 +337,13 @@ function fitHTML(t) {
     '<p><b>Not on your resume (don\'t claim; prepare or mention willingness to learn):</b> ' + li(rp.gaps.map(g => g.name)) + '</p></div>';
 }
 
+const capFirst = x => x.charAt(0).toUpperCase() + x.slice(1);
+const fmtPhone = p => { const d = (p || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, ""); return d.length === 10 ? "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6) : p; };
 function resumeHTML(t, contact) {
   const c = [contact.phone, contact.email, ...RES.links].filter(Boolean).map(esc).join("  |  ");
   let h = '<div class="rdoc"><div class="rn">' + esc(RES.name) + '</div><div class="rc">' + c + '</div>';
   h += '<h4>Education</h4><div class="rr"><b>' + esc(RES.edu.school) + '</b><b>' + esc(RES.edu.dates) + '</b></div><div class="ri">' + esc(RES.edu.degree) + '</div><ul><li>Relevant courses: ' + t.courses.map(x => esc(x[0])).join(", ") + '</li></ul>';
-  h += '<h4>Skills</h4>' + t.skills.map(g => '<p><b>' + esc(g.label) + ':</b> ' + g.items.map(x => esc(x[0])).join(", ") + '</p>').join("");
+  h += '<h4>Skills</h4>' + t.skills.map(g => '<p><b>' + esc(g.label) + ':</b> ' + esc(capFirst(g.items.map(x => x[0]).join(", "))) + '</p>').join("");
   t.sections.forEach(s => {
     h += '<h4>' + esc(s.title) + '</h4>';
     s.entries.forEach(e => { h += '<div class="rr"><b>' + esc(e.org) + '</b><b>' + esc(e.dates) + '</b></div><div class="ri">' + esc(e.role) + '</div><ul>' + e.bullets.map(b => '<li>' + esc(b[0]) + '</li>').join("") + '</ul>'; });
@@ -350,7 +352,7 @@ function resumeHTML(t, contact) {
 }
 function resumeText(t, contact) {
   const L = [RES.name, [contact.phone, contact.email, ...RES.links].filter(Boolean).join(" | "), "", "EDUCATION", RES.edu.school + " — " + RES.edu.dates, RES.edu.degree, "- Relevant courses: " + t.courses.map(x => x[0]).join(", "), "", "SKILLS"];
-  t.skills.forEach(g => L.push(g.label + ": " + g.items.map(x => x[0]).join(", ")));
+  t.skills.forEach(g => L.push(g.label + ": " + capFirst(g.items.map(x => x[0]).join(", "))));
   t.sections.forEach(s => { L.push("", s.title.toUpperCase()); s.entries.forEach(e => { L.push(e.org + " — " + e.dates, e.role); e.bullets.forEach(b => L.push("- " + b[0])); }); });
   return L.join("\n");
 }
@@ -416,7 +418,7 @@ function printDoc(html, name) {
   try { window.print(); } catch (e) {}
   setTimeout(() => { document.title = old; }, 500);
 }
-function contactInfo() { return { phone: (prof.phone || "").trim(), email: (prof.email || "").trim() }; }
+function contactInfo() { return { phone: fmtPhone((prof.phone || "").trim()), email: (prof.email || "").trim() }; }
 function tailorPanel(j) {
   const s = state[j.id] || {};
   const box = el("div", "tailor");
