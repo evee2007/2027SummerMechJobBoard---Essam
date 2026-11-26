@@ -94,10 +94,12 @@ textarea.tall{min-height:180px}
 .rdoc .rn{text-align:center;font-size:26px;font-weight:bold}.rdoc .rc{text-align:center;font-size:12.5px;margin-bottom:4px}
 .rdoc h4{font:normal 15px/1.2 inherit;font-family:inherit;font-variant:small-caps;border-bottom:1px solid #000;margin:10px 0 4px;padding-bottom:1px}
 .rdoc .rr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.rdoc .ri{font-style:italic}.rdoc p{margin:1px 0}.rdoc ul{margin:1px 0 5px;padding-left:22px}
+.fit{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-size:14.5px;background:var(--card)}.fit p{margin:3px 0}
 .ldoc{font:15px/1.55 Georgia,serif;color:#000;background:#fff;padding:8px 6px}.ldoc p{margin:0 0 10px}
 .doc:has(.rdoc),.doc:has(.ldoc){background:#fff}
 details.ai{margin-top:12px}details.ai summary{min-height:40px}
-@media print{#printarea .rdoc{font-size:9.9pt;line-height:1.22;padding:0}#printarea .rdoc .rn{font-size:22pt}#printarea .rdoc .rc{font-size:9.8pt}#printarea .rdoc h4{font-size:11.5pt;margin:6pt 0 2pt}#printarea .rdoc ul{margin:1pt 0 4pt}#printarea .ldoc{font-size:11pt;padding:0}@page{size:Letter;margin:0.4in 0.5in}}
+@media print{#printarea .rdoc{font-size:9.9pt;line-height:1.22;padding:0}#printarea .rdoc .rn{font-size:22pt}#printarea .rdoc .rc{font-size:9.8pt}#printarea .rdoc h4{font-size:11.5pt;margin:6pt 0 2pt}#printarea .rdoc ul{margin:1pt 0 4pt}#printarea .fit{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-size:14.5px;background:var(--card)}.fit p{margin:3px 0}
+.ldoc{font-size:11pt;padding:0}@page{size:Letter;margin:0.4in 0.5in}}
 #printarea{display:none}
 @media print{body>*:not(#printarea){display:none!important}#printarea{display:block;color:#000;font:11pt/1.4 Inter,Arial,sans-serif}#printarea h1{font-size:18pt}#printarea h2{font-size:12pt;border-bottom:1px solid #999;margin:10px 0 4px}#printarea ul{margin:2px 0 4px;padding-left:18px}#printarea p{margin:3px 0}@page{margin:0.6in}}
 @media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.stat.big{grid-column:span 2}.job{padding:12px}.co{font-size:17px}}
@@ -232,45 +234,109 @@ const RES = {
   ]
 };
 const KW = [
-  [/solidworks|onshape|cad\b|drawing|model+ing|3d/i, "cad"], [/design|prototyp|concept/i, "design"], [/sheet ?metal|fabricat|bracket|weld/i, "sheetmetal"],
-  [/stress|fea|analys|load|structur|calculat/i, "analysis"], [/manufactur|production|process|assembl|plant|lean|continuous improvement|wcm|operations/i, "manufacturing"],
-  [/maintenance|reliab|millwright|mechanic\b|uptime|preventive/i, "maintenance"], [/repair|troubleshoot|diagnos|servic|technician|field/i, "repair"],
-  [/inspect|quality|condition|validat|audit|compliance/i, "inspection"], [/\btest/i, "testing"], [/pump|fluid|hvac|plumbing|piping|water|thermal|refrigerat|cool/i, "fluids"],
-  [/motor|drive|gear|actuat|mechatron|robot|automation/i, "motors"], [/customer|client|on-site|travel/i, "customer"], [/aero|uav|drone|aircraft|space|flight/i, "aero"],
-  [/vehicle|rover|automotive|rail|chassis/i, "vehicle"], [/tool|equipment|machine/i, "equipment"], [/matlab|python|\bc\b|program|software|code/i, "software"]
+  [/solidworks|onshape|catia|creo|inventor|autocad|revit|\bcad\b|drafting|drawings?\b|model+ing|3d model|gd&t|tolerances?/i, "cad"],
+  [/design|prototyp|concept|develop(?:ing|ment)? (?:of )?(?:new )?(?:parts|products|components)/i, "design"],
+  [/sheet ?metal|fabricat|bracket|weld|machin(?:ed|ing)|cnc/i, "sheetmetal"],
+  [/stress|fea|finite element|analys|loads?\b|structur|calculat|sizing|selection/i, "analysis"],
+  [/manufactur|production|process|assembl|plant|lean|continuous improvement|wcm|operations|kaizen|5s/i, "manufacturing"],
+  [/maintenance|reliab|millwright|mechanic\b|uptime|preventive|predictive|downtime|cmms/i, "maintenance"],
+  [/repair|troubleshoot|diagnos|servic(?:e|ing)|technician|field|root cause|failure/i, "repair"],
+  [/inspect|quality|condition|validat|audit|compliance|standards?\b|codes?\b/i, "inspection"],
+  [/\btest|commission|verif/i, "testing"],
+  [/pump|fluid|hvac|plumbing|piping|pipe|duct|ventilat|water|thermal|refrigerat|cool|heat|fire protection|sprinkler|mechanical systems/i, "fluids"],
+  [/motor|drive|gear|actuat|mechatron|robot|automation|mechanism/i, "motors"],
+  [/customer|client|on-site|site visits?|travel|communicat/i, "customer"],
+  [/aero|uav|drone|aircraft|space|flight|satellite/i, "aero"],
+  [/vehicle|rover|automotive|rail|chassis|suspension/i, "vehicle"],
+  [/tools?\b|equipment|machine|machinery/i, "equipment"],
+  [/matlab|python|\bc\b|c\+\+|program|software|code|script/i, "software"]
 ];
-const CATW = { Aerospace: "design cad analysis aero", Design: "design cad analysis sheetmetal", Manufacturing: "manufacturing maintenance repair equipment inspection",
-  "Buildings/HVAC": "fluids maintenance inspection repair cad", Energy: "maintenance inspection analysis fluids", Robotics: "motors design cad testing",
+const CATW = { Aerospace: "design cad analysis aero", Design: "design cad analysis sheetmetal", Manufacturing: "manufacturing design maintenance equipment inspection",
+  "Buildings/HVAC": "design cad fluids analysis inspection", Energy: "design analysis fluids inspection maintenance", Robotics: "motors design cad testing",
   Automotive: "manufacturing vehicle design equipment", Thermal: "fluids analysis design" };
-const CATLINE = { Aerospace: "My design-team work on a competition drone and a rover has me most interested in hardware that has to be light, strong and reliable, which is what draws me to this role.",
-  Design: "I enjoy taking a part from a sketch to a CAD model to something that can actually be built, and this role would let me do more of that alongside experienced engineers.",
-  Manufacturing: "I like work where engineering meets the shop floor, and I've spent the last two years keeping real equipment running, so a role close to production is exactly where I want to grow.",
-  "Buildings/HVAC": "My repair work on water and fluid systems got me interested in how building and mechanical systems are designed and maintained, and this role is a chance to learn that from the engineering side.",
-  Energy: "I'm drawn to energy work because reliability matters so much, and my background diagnosing and repairing equipment in the field has taught me to take that seriously.",
-  Robotics: "I enjoy mechanisms that move, and designing a motor-driven robotic arm and a rover drivetrain on my design teams has me eager to work on real robotic and automated systems.",
-  Automotive: "Working on a rover drivetrain and handling heavy equipment every day has made me keen to work on vehicles and the processes that build them.",
-  Thermal: "My hands-on work with pumps, water systems and cooling equipment has made me curious about the thermal design behind them." };
-function weights(j, jd) {
+// things a posting may ask for that are NOT on the resume -> flagged as gaps, never claimed
+const GAPS = [[/autocad/i, "AutoCAD", 1], [/revit/i, "Revit", 1], [/catia/i, "CATIA", 1], [/inventor/i, "Inventor", 1], [/\bcreo\b/i, "Creo", 1], [/\bnx\b|siemens nx/i, "Siemens NX", 1],
+  [/ansys|abaqus|\bfea\b|finite element/i, "FEA software (ANSYS etc.)", 1], [/gd&t/i, "GD&T", 0], [/python/i, "Python", 1], [/labview/i, "LabVIEW", 1], [/\bplc|ladder logic/i, "PLCs", 0],
+  [/six sigma|lean certification/i, "Six Sigma / Lean", 0], [/\bcnc|g-code|machining/i, "CNC machining", 0], [/weld/i, "welding", 0], [/hvac load|load calc|heat load|ashrae/i, "HVAC load calculations", 0],
+  [/building code|\bobc\b|nbc|csa b|nfpa/i, "building / fire codes", 0], [/statics/i, "Statics (completing Summer 2027)", 0], [/thermodynamic/i, "Thermodynamics", 0], [/fluid mechanics/i, "Fluid Mechanics", 0],
+  [/power bi|tableau|\bsql\b/i, "Power BI / SQL", 1], [/driver'?s licen[cs]e|g2|class g/i, "driver's licence (check yours)", 0], [/security clearance|controlled goods|\bcgp\b|itar/i, "security clearance / Controlled Goods", 0]];
+const HAVE = [[/solidworks/i, "SolidWorks"], [/onshape/i, "Onshape"], [/matlab/i, "MATLAB"], [/excel/i, "Excel"], [/troubleshoot|diagnos/i, "troubleshooting"],
+  [/root cause/i, "root cause analysis"], [/repair/i, "repair"], [/maintenance/i, "maintenance"], [/inspect/i, "inspection"], [/pump/i, "pumps"], [/motor/i, "motors"], [/sheet ?metal/i, "sheet metal"],
+  [/3d print|additive/i, "3D printing"], [/assembl/i, "assembly"], [/customer|client/i, "customer service"], [/stress|load/i, "load / stress analysis"], [/design/i, "design"], [/cad\b|model/i, "CAD modelling"],
+  [/power tools|hand tools/i, "power tools"], [/test/i, "testing"], [/team/i, "teamwork"], [/water|plumbing|fluid/i, "water / fluid systems"]];
+function readPosting(j, jd) {
+  const title = j.role, body = (j.note || "") + " " + (jd || "");
+  const cnt = (re, s) => (s.match(new RegExp(re.source, "gi")) || []).length;
+  const handsRe = /technician|maintenance|millwright|mechanic\b|reliab|field service|service tech|repair|operator|tool room|mold tech|condition assessor|printing maintenance/i;
+  const designRe = /design|drafting|cad\b|autocad|revit|solidworks|engineer(?:ing)?\b|analysis|prototyp|product|project|systems|validation|process/i;
+  let hands = cnt(handsRe, title) * 4 + Math.min(cnt(handsRe, body), 6);
+  let design = cnt(designRe, title) * 3 + Math.min(cnt(designRe, body), 6) + 2; // engineering roles lean on engineering projects by default
+  if (/technician|millwright|mechanic\b|maintenance|reliab|tool room|mold tech/i.test(title)) hands += 4;
+  const gaps = GAPS.filter(g => g[0].test(title + " " + body)).map(g => ({ name: g[1], tool: !!g[2] }));
+  const have = [...new Set(HAVE.filter(h => h[0].test(body + " " + title)).map(h => h[1]))];
+  return { type: hands > design ? "hands" : "design", hands, design, gaps, have, hasJD: !!(jd && jd.trim().length > 80) };
+}
+function weights(j, jd, rp) {
   const w = {}; const add = (tags, n) => tags.split(" ").filter(Boolean).forEach(t => w[t] = (w[t] || 0) + n);
   add(CATW[j.cat] || "design cad", 2);
-  const txt = j.role + " " + (j.note || "") + " " + (jd || "");
-  KW.forEach(([re, t]) => { const m = txt.match(new RegExp(re.source, "gi")); if (m) w[t] = (w[t] || 0) + Math.min(m.length, 4) * (jd && jd.trim() ? 1 : 2); });
+  add(rp.type === "hands" ? "repair maintenance equipment inspection testing" : "design cad analysis", 3);
+  const txt = j.role + " " + j.role + " " + (j.note || "") + " " + (jd || "");
+  KW.forEach(([re, t]) => { const m = txt.match(new RegExp(re.source, "gi")); if (m) w[t] = (w[t] || 0) + Math.min(m.length, 5) * (rp.hasJD ? 1 : 2); });
   return w;
 }
 const score = (tags, w) => tags.split(" ").filter(Boolean).reduce((a, t) => a + (w[t] || 0), 0);
 function tailorData(j, jd) {
-  const w = weights(j, jd);
-  const sortItems = arr => arr.map((x, i) => [x, i]).sort((a, b) => score(b[0][1], w) - score(a[0][1], w) || a[1] - b[1]).map(x => x[0]);
-  const sections = RES.sections.map(s => ({ ...s, entries: s.entries.map(e => ({ ...e, bullets: sortItems(e.bullets), sc: Math.max(...e.bullets.map(b => score(b[1], w))) })) }));
-  const ds = Math.max(...sections[0].entries.map(e => e.sc)), ws = Math.max(...sections[1].entries.map(e => e.sc));
-  if (ws > ds) sections.reverse();
+  const rp = readPosting(j, jd), w = weights(j, jd, rp);
+  const sortItems = (arr, lead) => arr.map((x, i) => [x, i, score(x[1], w) + (lead && i === 0 ? 6 : 0)]).sort((a, b) => b[2] - a[2] || a[1] - b[1]).map(x => x[0]);
+  const entScore = e => e.bullets.map(b => score(b[1], w)).sort((a, b) => b - a).slice(0, 2).reduce((a, b) => a + b, 0);
+  let sections = RES.sections.map(s => ({ ...s, entries: s.entries.map(e => ({ ...e, sec: s.key, bullets: sortItems(e.bullets, true), sc: entScore(e) })) }));
+  // design teams keep their best entry first; work stays reverse-chronological
+  sections[0].entries.sort((a, b) => b.sc - a.sc);
+  if (rp.type === "hands") sections.reverse();
   let skills = RES.skills.map(g => ({ ...g, items: sortItems(g.items), sc: Math.max(...g.items.map(x => score(x[1], w))) }));
-  const hands = skills[2]; if (hands.sc > skills[0].sc) skills = [hands, skills[0], skills[1]];
+  if (rp.type === "hands") skills = [skills[2], skills[0], skills[1]];
   const courses = sortItems(RES.edu.courses);
-  const top2 = e => e.bullets.map(b => score(b[1], w)).sort((a, b) => b - a).slice(0, 2).reduce((a, b) => a + b, 0);
-  const stories = RES.sections.flatMap(s => s.entries.map(e => Object.assign({}, e, { sec: s.key }))).map(e => [e, top2(e)]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
-  return { sections, skills, courses, stories, lead: sections[0].title };
+  const best = key => sections.find(s => s.key === key).entries.slice().sort((a, b) => b.sc - a.sc)[0];
+  const lead = rp.type === "hands" ? best("work") : best("design"), second = rp.type === "hands" ? best("design") : best("work");
+  return { sections, skills, courses, stories: [lead, second], rp, lead: sections[0].title };
 }
+const OPEN = {
+  hands: { _: "Most of my experience so far has been diagnosing and repairing real equipment, and I'm looking for a role where I can keep doing that while learning the engineering behind it.",
+    "Buildings/HVAC": "Most of my experience so far has been diagnosing and repairing water and fluid equipment on site, and this role would let me keep doing that hands-on work while learning how building systems are engineered.",
+    Manufacturing: "Most of my experience so far has been keeping real equipment running, and I'm looking for a role close to production where I can learn how a plant keeps its equipment reliable." },
+  design: { _: "I enjoy taking a part from a sketch to a CAD model to something that can actually be built, and this role would let me do more of that alongside experienced engineers.",
+    "Buildings/HVAC": "I've spent two years repairing water and fluid systems after they were installed, and I'm interested in the other side of that work: how mechanical, plumbing and building systems are designed and specified in the first place.",
+    Manufacturing: "I'm interested in engineering that happens close to production, where a design decision has to hold up on real equipment, and my mix of design-team work and hands-on repair fits that well.",
+    Aerospace: "My design-team work on a competition drone and a rover has me most interested in hardware that has to be light, strong and reliable, which is what draws me to this role.",
+    Robotics: "I enjoy mechanisms that move, and designing a motor-driven robotic arm and a rover drivetrain on my design teams has me eager to work on real robotic and automated systems.",
+    Energy: "I'm drawn to energy work because reliability matters so much, and my design-team projects and field repair work have taught me to design and check parts carefully.",
+    Automotive: "Designing a rover drivetrain and handling heavy equipment every day has made me keen to work on vehicles and the processes that build them.",
+    Thermal: "My hands-on work with pumps, water systems and cooling equipment has made me curious about the thermal design behind them." } };
+const cleanRole = r => r.replace(/\s*[\(\[][^\)\]]*2027[^\)\]]*[\)\]]/g, "").replace(/^(?:Summer|Fall|Winter)? ?2027:?\s*/i, "").replace(/\s*-\s*(?:Spring\/)?Summer(?:\/Fall)? 2027/i, "").replace(/\s*\((?:May|Summer)[^)]*\)/i, "").replace(/\s*-?\s*(?:Summer )?2027\s*$/i, "").trim();
+const joinOr = a => a.length > 1 ? a.slice(0, -1).join(", ") + " or " + a[a.length - 1] : a[0];
+function letterText(j, t, contact) {
+  const rp = t.rp, loc = j.loc ? " in " + j.loc.replace(/\s*\(.*?\)/g, "") : "";
+  const term = j.terms && j.terms.length ? " for a " + joinOr(j.terms) + "-month term" : "";
+  const open = (OPEN[rp.type][j.cat] || OPEN[rp.type]._);
+  const tools = rp.gaps.filter(g => g.tool).map(g => g.name.replace(/ \(.*\)/, ""));
+  const gapLine = tools.length ? " I haven't used " + (tools.length > 1 ? tools.slice(0, -1).join(", ") + " or " + tools.slice(-1) : tools[0]) + " yet, but I picked up SolidWorks and Onshape quickly and would be glad to learn " + (tools.length > 1 ? "them" : "it") + " on your team." : "";
+  const bridge = rp.type === "hands" ? " That work taught me to find the real cause of a problem before replacing parts." : " Working on equipment in the field has taught me to design parts with the person who has to build and service them in mind.";
+  return ["Dear Hiring Team,",
+    "I'm a second-year Mechanical Engineering student at Toronto Metropolitan University, applying for the " + cleanRole(j.role) + " position at " + j.company + loc + " for Summer 2027. " + open,
+    t.stories[0].story,
+    t.stories[1].story + bridge + gapLine,
+    "I'm available starting in May 2027" + term + ". Thank you for considering my application. I'd appreciate the chance to discuss how I can contribute to your team.",
+    "Sincerely,\n" + RES.name + (contact.phone || contact.email ? "\n" + [contact.phone, contact.email].filter(Boolean).join(" | ") : "")].join("\n\n");
+}
+function fitHTML(t) {
+  const rp = t.rp;
+  const li = (a) => a.length ? a.map(esc).join(", ") : "—";
+  return '<div class="fit"><p><b>Reads as:</b> ' + (rp.type === "hands" ? "hands-on / technician role, so Work Experience and hands-on skills lead" : "engineering / design role, so Design Teams lead") +
+    (rp.hasJD ? "" : ' <span class="status">(based on the title and notes only; paste the job description for a closer read)</span>') + '</p>' +
+    '<p><b>Posting asks for, and you have:</b> ' + li(rp.have) + '</p>' +
+    '<p><b>Not on your resume (don\'t claim; prepare or mention willingness to learn):</b> ' + li(rp.gaps.map(g => g.name)) + '</p></div>';
+}
+
 function resumeHTML(t, contact) {
   const c = [contact.phone, contact.email, ...RES.links].filter(Boolean).map(esc).join("  |  ");
   let h = '<div class="rdoc"><div class="rn">' + esc(RES.name) + '</div><div class="rc">' + c + '</div>';
@@ -287,16 +353,6 @@ function resumeText(t, contact) {
   t.skills.forEach(g => L.push(g.label + ": " + g.items.map(x => x[0]).join(", ")));
   t.sections.forEach(s => { L.push("", s.title.toUpperCase()); s.entries.forEach(e => { L.push(e.org + " — " + e.dates, e.role); e.bullets.forEach(b => L.push("- " + b[0])); }); });
   return L.join("\n");
-}
-function letterText(j, t, contact) {
-  const loc = j.loc ? " in " + j.loc.replace(/\s*\(.*?\)/g, "") : "";
-  const term = j.terms && j.terms.length ? " for a " + j.terms.join(" or ") + "-month term" : "";
-  return ["Dear Hiring Team,",
-    "I'm a second-year Mechanical Engineering student at Toronto Metropolitan University, and I'm applying for the " + j.role + " position at " + j.company + loc + ". " + (CATLINE[j.cat] || CATLINE.Design),
-    t.stories[0].story,
-    t.stories[1].story + (t.stories[0].sec !== t.stories[1].sec ? " Between the two, I've learned to diagnose a problem properly before fixing it, and to design parts with the person who has to build and service them in mind." : (t.stories[0].sec === "work" ? " I'm also on two student design teams, TASC and TMAV, where I design rover and drone hardware in SolidWorks and Onshape, so I bring both the hands-on and the design side." : " Outside the design teams, I've spent two years repairing commercial equipment and inspecting rental machinery, so I know how parts fail in real use.")),
-    "I'm available starting in May 2027" + term + ". Thank you for considering my application. I'd welcome the chance to talk about how I can contribute to your team.",
-    "Sincerely,\n" + RES.name + (contact.phone || contact.email ? "\n" + [contact.phone, contact.email].filter(Boolean).join(" | ") : "")].join("\n\n");
 }
 
 const PKEY = "mech-board-2027-profile";
@@ -326,7 +382,9 @@ function buildPrompt(j, jd, masterText) {
     "- Use ONLY facts from my master resume and extra notes. Never invent jobs, projects, numbers, tools, awards or dates. You may reorder, cut, and reword bullets to match the posting's language, and choose which projects to lead with.",
     "- Resume: one page, Canadian spelling, strong action verbs, quantify only where my resume already gives numbers. Put the most relevant section first. Skills section lists what I actually have that the posting asks for first.",
     "- Cover letter: 250 to 320 words, addressed to the hiring team, specific to this company and role using only what the posting says, naming 2 or 3 of my real experiences that fit. No clichés like 'I am writing to express my interest'.",
-    "- If the posting asks for something I clearly don't have, don't claim it; after the letter add a line 'GAPS:' listing those items so I can prepare.",
+    "- Before writing, read the full job description carefully and work out (privately, don't output this): the 5 to 8 things this role most needs, which of my experiences prove each one, whether this is mainly a design/engineering role or a hands-on/technician role, and which section should therefore lead. Mirror the posting's own wording where it truthfully describes what I did.",
+    "- Cover letter voice: plain, specific and human, like a capable student wrote it. Use one concrete story (a real failure I diagnosed, or a real design decision) rather than adjectives. Avoid stock phrases such as 'passionate', 'exactly where I want to grow', 'leverage', 'dynamic', 'I am confident that'.",
+    "- If the posting asks for something I clearly don't have, don't claim it; for software I lack, the letter may say I haven't used it yet but learn CAD tools quickly. After the letter add a line 'GAPS:' listing those items so I can prepare.",
     "- Format exactly like this, in plain Markdown (# for my name, ## for section headings, - for bullets):",
     "===RESUME===",
     "(resume)",
@@ -363,7 +421,7 @@ function tailorPanel(j) {
   const s = state[j.id] || {};
   const box = el("div", "tailor");
   box.append(el("h3", null, "Tailored for " + j.company));
-  const hint = el("p", "status", "Built from your resume: bullets, skills and sections are reordered so the most relevant come first, and the letter uses your two best-matching experiences. Nothing new is added. Read it over before sending.");
+  const hint = el("p", "status", "Built from your resume. It reads the title, notes and any job description you paste, decides whether this is a design or hands-on role, reorders sections, bullets and skills to match, and flags what the posting asks for that you don't have. It never adds anything that isn't on your resume. Read it over before sending.");
   box.append(hint);
   const c = contactInfo();
   if (!c.phone && !c.email) { const n = el("p", "status", "Tip: add your phone and email once in Resume tailoring setup (top of the page) so they appear on the PDF. They're kept in your browser, not on the public site."); box.append(n); }
@@ -377,7 +435,7 @@ function tailorPanel(j) {
   const doc = el("div", "doc"); const tools = el("div", "row");
   const copyB = el("button", "btn", "Copy text"), pdfB = el("button", "btn apply", "Save as PDF"); copyB.type = pdfB.type = "button";
   const msg = el("span", "status"); msg.setAttribute("aria-live", "polite"); tools.append(pdfB, copyB, msg);
-  box.append(seg, doc, tools);
+  const fit = el("div"); box.append(fit, seg, doc, tools);
   let t = tailorData(j, jd.value);
   const cur = () => {
     const ai = (state[j.id] || {}).tailored;
@@ -385,7 +443,7 @@ function tailorPanel(j) {
     if (which === "letter") { const lt = letterText(j, t, contactInfo()); return { html: '<div class="ldoc">' + lt.split("\n\n").map(p => "<p>" + esc(p).replace(/\n/g, "<br>") + "</p>").join("") + "</div>", text: lt }; }
     return { html: resumeHTML(t, contactInfo()), text: resumeText(t, contactInfo()) };
   };
-  const draw = () => { [b1, b2, b3].forEach((b, i) => b.setAttribute("aria-pressed", String(["resume", "letter", "ai"][i] === which))); doc.innerHTML = cur().html; };
+  const draw = () => { fit.innerHTML = fitHTML(t); [b1, b2, b3].forEach((b, i) => b.setAttribute("aria-pressed", String(["resume", "letter", "ai"][i] === which))); doc.innerHTML = cur().html; };
   b1.onclick = () => { which = "resume"; draw(); }; b2.onclick = () => { which = "letter"; draw(); }; b3.onclick = () => { which = "ai"; draw(); };
   jd.oninput = () => { const x = state[j.id] || {}; x.jd = jd.value; state[j.id] = x; save(); t = tailorData(j, jd.value); draw(); };
   copyB.onclick = async () => { try { await navigator.clipboard.writeText(cur().text); msg.textContent = "Copied."; } catch (e) { msg.textContent = "Copy blocked; select the text instead."; } };
