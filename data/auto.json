@@ -1,5 +1,32 @@
 [
  {
+  "id": "westinghouse-electric-mechanical-engineering-intern-burlington-on",
+  "company": "Westinghouse Electric",
+  "role": "Mechanical Engineering, Intern",
+  "loc": "Burlington, ON",
+  "country": "Canada",
+  "terms": [
+   "4",
+   "6",
+   "12",
+   "16"
+  ],
+  "deadline": "",
+  "posted": "",
+  "url": "https://coawp.com/go/cafac84c-ba96-4150-9cf8-62a2ae98de42?from=github-engineering",
+  "check": false,
+  "usp": false,
+  "cat": "Design",
+  "source": "GitHub list: coawp Canadian Engineering Internships 2027 (auto)",
+  "note": "",
+  "yr": "ok",
+  "yrwhy": "Found automatically: check the posting for year requirements.",
+  "pick": 2,
+  "pickwhy": "Auto-flagged: core mechanical role in the GTA/Hamilton. Read the posting to confirm.",
+  "auto": true,
+  "added": "2026-11-27"
+ },
+ {
   "id": "abbott-field-service-core-lab-co-op-ontario",
   "company": "Abbott",
   "role": "Field Service – Core Lab, Co-op",
