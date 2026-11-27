@@ -251,6 +251,17 @@ def main():
     seen_path.write_text(json.dumps(seen, indent=1, sort_keys=True))
 
     jobs = curated + auto
+    try:
+        import reqs
+        cache_path = DATA / "reqs.json"
+        cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
+        n = reqs.check(jobs, cache)
+        cache_path.write_text(json.dumps(cache, ensure_ascii=False, indent=1, sort_keys=True))
+        flagged = sum(1 for j in jobs if cache.get(j["url"], {}).get("hit"))
+        unread = sum(1 for j in jobs if j["url"] in cache and not cache[j["url"]].get("read"))
+        print(f"requirements: read {n} postings; {flagged} need more than 2nd year; {unread} couldn't be read")
+    except Exception as e:
+        print(f"requirements check skipped ({e})", file=sys.stderr)
     tpl = (ROOT / "template.html").read_text()
     stamp = dt.date.today().strftime("%B %-d, %Y")
     html = (tpl.replace("__UPDATED__", stamp)
