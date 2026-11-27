@@ -27,7 +27,7 @@ PATTERNS = [
     re.compile(r"\bclass of 20(?:2[5-9])\b", re.I),
 ]
 GRAD = re.compile(
-    r"\bgraduat\w*[^.;:\n]{0,90}?\b(20(?:2[5-9]|3\d))\b(?!\s*(?:or|and)\s*(?:later|after|beyond))", re.I)
+    r"\b(?:graduating|graduation|expected to graduate|(?:will|to|must) graduate|graduate (?:by|between|before|in|no later than|from))[^.;:\n]{0,90}?\b(20(?:2[5-9]|3\d))\b(?!\s*(?:or|and)\s*(?:later|after|beyond))", re.I)
 GRAD_LATER = re.compile(r"\b(20\d\d)\s*(?:or|and)\s*(?:later|after|beyond)", re.I)
 
 
@@ -91,7 +91,7 @@ def find_requirement(text):
         for m in pat.finditer(text):
             # "2nd, 3rd or 4th year students" / "sophomore, junior or senior" include 2nd years
             before = text[max(0, m.start() - 45):m.start()]
-            if re.search(r"\b(?:1st|2nd|first|second|sophomore|freshman|any)\b", before + m.group(0), re.I):
+            if re.search(r"\b(?:1st|2nd|first|second|sophomore|freshman|any|rising)\b", before[-20:] + m.group(0), re.I):
                 continue
             return _snip(text, m)
     later = {int(y) for y in GRAD_LATER.findall(text)}
@@ -130,8 +130,10 @@ def check(jobs, cache):
                 text = page_text(url)
                 c = {"checked": today.isoformat(), "read": len(text) > 800, "hit": find_requirement(text)}
             except Exception as e:
-                c = {"checked": today.isoformat(), "read": False, "hit": "", "error": str(e)[:120]}
+                c = {"checked": today.isoformat(), "read": False, "hit": "", "error": str(e)[:120],
+                     "gone": bool(re.search(r"HTTP Error (?:404|410)", str(e)))}
             cache[url] = c
+        j["gone"] = bool(c and c.get("gone"))
         if c and c.get("hit") and not j.get("yr_manual"):
             j["yr"] = "no"
             j["yrwhy"] = "The posting asks for more than 2nd year: " + c["hit"]
