@@ -18,3 +18,13 @@ Job data is the `JOBS` array near the top of the `<script>` in `index.html`. Eac
 
 ## Privacy
 Nothing personal is stored in this repo. Don't commit your resume or API key.
+
+## Daily updates
+
+A GitHub Action (`.github/workflows/daily-update.yml`) runs every morning. `scripts/update.py` pulls Summer 2027 listings from the coawp Canadian Engineering Internships list and SimplifyJobs, keeps mechanical roles in Ontario and the US, skips anything already on the board, and rebuilds `index.html`. New roles get a blue "new" chip for a week; tick "New this week" to see only those.
+
+- `data/curated.json`: hand-picked roles (with notes, match ratings and year checks)
+- `data/auto.json`: roles found automatically, rewritten each run (closed postings drop off)
+- `data/seen.json`: the date each auto role first appeared
+
+To run it by hand: Actions tab → Daily job update → Run workflow.

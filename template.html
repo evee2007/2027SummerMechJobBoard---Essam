@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mech Eng Summer 2027 Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a working tracker, plain and quick to scan, like a shop work-order board.
+   IDEA: a parts list / work-order tag: each job is a tag you tick off when it ships.
+   PICTURE: the live list itself, under a green band holding the one figure that matters (left to apply).
+   COLOUR and TYPE: white, ink #0b0b10, signal green #00a862 band, mist #eafaf2; Space Grotesk + Inter.
+   LAYOUT: one 860px column: band with counts, tabs + filters, then the tag list. */
+:root{color-scheme:light dark;
+  --bg:light-dark(#ffffff,#07130d);--ink:light-dark(#0b0b10,#e8f3ec);--muted:light-dark(#5b616e,#9db3a6);
+  --line:light-dark(#e3e6ea,#1f3328);--card:light-dark(#ffffff,#0c1d14);--mist:light-dark(#eafaf2,#0f2a1c);
+  --green:#00a862;--greenInk:light-dark(#007a47,#3fd18f);--warn:light-dark(#a8530b,#f2a35e);--bad:light-dark(#c4302b,#ff8a80);
+  --badSoft:light-dark(#fdecea,#3a1d1d);--blue:light-dark(#2b4fd6,#8ea4ff)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,"Segoe UI",system-ui,sans-serif;overflow-x:clip}
+h1,h2,.co,.n{font-family:"Space Grotesk","Segoe UI",system-ui,sans-serif}
+a{color:var(--greenInk)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.band{background:var(--green);color:#04140b;padding:clamp(24px,4vw,48px) max(5vw,16px) 22px}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.05;margin:0;font-weight:700;text-wrap:balance}
+.sub{margin:8px 0 0;max-width:62ch}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:20px}
+.stat{background:rgba(255,255,255,.88);color:#0b0b10;border-radius:12px;padding:10px 14px}
+.stat .n{font-size:clamp(26px,4vw,34px);font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;display:block}
+.stat small{font-size:13px;color:#3d4450}
+.stat.big{background:#04140b;color:#eafaf2}.stat.big small{color:#b5dcc7}
+.stat.soon .n{color:#c4302b}
+main{padding:20px max(5vw,16px) 64px}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav.tabs button{font:600 16px "Space Grotesk",system-ui,sans-serif;background:none;border:0;cursor:pointer;color:var(--muted);padding:12px 14px;min-height:44px;border-bottom:3px solid transparent;margin-bottom:-1px}
+nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--green)}
+.count{font:500 13px Inter,sans-serif;margin-left:4px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0}
+.tools input[type=search],.tools select{font:16px Inter,sans-serif;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.tools input[type=search]{flex:1 1 220px}
+.tools label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:15px;cursor:pointer;min-height:44px}
+.tools input[type=checkbox]{width:18px;height:18px;accent-color:var(--green)}
+ul.jobs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.job{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px}
+.job.done{background:var(--mist);border-color:transparent}
+.job.done .role{text-decoration:line-through;text-decoration-color:var(--muted)}
+.tick{width:24px;height:24px;margin:2px 0 0;accent-color:var(--green);cursor:pointer}
+.top{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.co{font-weight:700;font-size:18px}
+.role{font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:14px;margin-top:4px}
+.chip{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.chip.four{border-color:var(--greenInk);color:var(--greenInk)}
+.chip.due{border-color:var(--warn);color:var(--warn)}
+.chip.due.soon{border-color:var(--bad);color:var(--bad);background:var(--badSoft)}
+.chip.check{border-color:var(--warn);color:var(--warn)}
+.chip.usp{border-color:var(--bad);color:var(--bad)}
+.chip.us{background:var(--blue);border-color:var(--blue);color:var(--bg)}
+.chip.ca{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip.top{background:var(--green);border-color:var(--green);color:#04140b;font-weight:600}
+.chip.new{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:600}
+.job.picked{border-color:var(--green);border-width:2px}
+.why{margin:6px 0 0;font-size:15px;font-weight:600;color:var(--greenInk)}
+.chip.ok{border-color:var(--greenInk);color:var(--greenInk)}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+.btn{font:600 15px Inter,sans-serif;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:999px;min-height:40px;cursor:pointer;display:inline-flex;align-items:center}
+.btn.apply{background:var(--green);border-color:var(--green);color:#04140b}
+.btn:hover{border-color:var(--green)}
+.src{color:var(--muted);font-size:13px;margin:8px 0 0}
+.note{margin:4px 0 0;font-size:15px}
+textarea{width:100%;font:15px Inter,sans-serif;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--card);color:var(--ink);margin-top:8px;min-height:60px}
+.empty{color:var(--muted);padding:24px 4px}
+.foot{color:var(--muted);font-size:14px;margin-top:28px;border-top:1px solid var(--line);padding-top:16px}
+.foot p{margin:0 0 10px}
+details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.setup{border:1px solid var(--line);border-radius:14px;padding:4px 16px 14px;margin-bottom:12px;background:var(--mist)}
+.setup p{margin:6px 0 10px}.hint{font-size:15px}
+.fl{display:block;font-weight:600;font-size:15px;margin:12px 0 4px}
+.in{width:100%;font:16px Inter,sans-serif;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+textarea.tall{min-height:180px}
+.tailor{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+.tailor h3{font:600 16px "Space Grotesk",sans-serif;margin:0 0 4px}
+.seg{display:flex;gap:4px;margin-top:10px}
+.seg button{font:600 14px Inter,sans-serif;border:1px solid var(--line);background:var(--card);color:var(--muted);padding:6px 12px;border-radius:8px;min-height:36px;cursor:pointer}
+.seg button[aria-pressed=true]{color:var(--ink);border-color:var(--green)}
+.doc{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:8px;background:var(--card);font-size:15px;max-height:520px;overflow:auto}
+.doc h1{font-size:22px}.doc h2{font-size:17px;margin:12px 0 4px;border-bottom:1px solid var(--line)}.doc h3{font-size:15px;margin:8px 0 2px}.doc p{margin:4px 0}.doc ul{margin:2px 0 6px;padding-left:20px}
+.status{font-size:14px;color:var(--muted)}
+.rdoc{font-family:"Latin Modern Roman","CMU Serif",Georgia,"Times New Roman",serif;color:#000;background:#fff;font-size:13.5px;line-height:1.3;padding:6px 4px}
+.rdoc .rn{text-align:center;font-size:26px;font-weight:bold}.rdoc .rc{text-align:center;font-size:12.5px;margin-bottom:4px}
+.rdoc h4{font:normal 15px/1.2 inherit;font-family:inherit;font-variant:small-caps;border-bottom:1px solid #000;margin:10px 0 4px;padding-bottom:1px}
+.rdoc .rr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.rdoc .ri{font-style:italic}.rdoc p{margin:1px 0}.rdoc ul{margin:1px 0 5px;padding-left:22px}
+.fit{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-size:14.5px;background:var(--card)}.fit p{margin:3px 0}
+.noai{border:2px solid var(--bad);background:var(--badSoft);color:var(--ink);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-weight:600;font-size:15px}.noai p{margin:0}
+.ldoc{font:15px/1.55 Georgia,serif;color:#000;background:#fff;padding:8px 6px}.ldoc p{margin:0 0 10px}
+.doc:has(.rdoc),.doc:has(.ldoc){background:#fff}
+details.ai{margin-top:12px}details.ai summary{min-height:40px}
+@media print{#printarea .rdoc{font-size:9.9pt;line-height:1.22;padding:0}#printarea .rdoc .rn{font-size:22pt}#printarea .rdoc .rc{font-size:9.8pt}#printarea .rdoc h4{font-size:11.5pt;margin:6pt 0 2pt}#printarea .rdoc ul{margin:1pt 0 4pt}#printarea .fit{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0 0;font-size:14.5px;background:var(--card)}.fit p{margin:3px 0}
+.ldoc{font-size:11pt;padding:0}@page{size:Letter;margin:0.4in 0.5in}}
+#printarea{display:none}
+@media print{body>*:not(#printarea){display:none!important}#printarea{display:block;color:#000;font:11pt/1.4 Inter,Arial,sans-serif}#printarea h1{font-size:18pt}#printarea h2{font-size:12pt;border-bottom:1px solid #999;margin:10px 0 4px}#printarea ul{margin:2px 0 4px;padding-left:18px}#printarea p{margin:3px 0}@page{margin:0.6in}}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.stat.big{grid-column:span 2}.job{padding:12px}.co{font-size:17px}}
+@media(prefers-reduced-motion:no-preference){.job{transition:background .25s}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <h1>Mechanical engineering: Summer 2027 board</h1>
+  <p class="sub">Co-ops and internships in Toronto, the GTA and Hamilton, plus US roles. Tick a job once you've applied; ticks stay saved in this browser. Updated __UPDATED__. New listings are pulled in automatically every day.</p>
+  <div class="stats">
+    <div class="stat big"><span class="n" id="n-open">0</span><small>left to apply</small></div>
+    <div class="stat"><span class="n" id="n-done">0</span><small>applied</small></div>
+    <div class="stat soon"><span class="n" id="n-soon">0</span><small>deadlines in 14 days</small></div>
+    <div class="stat"><span class="n" id="n-ca">0</span><small>Canada roles open to 2nd years</small></div>
+    <div class="stat"><span class="n" id="n-ok">0</span><small>best matches left</small></div>
+  </div>
+</div></header>
+<main><div class="wrap">
+  <details class="setup" id="setup">
+    <summary>Resume tailoring setup <span id="setup-state" class="count"></span></summary>
+    <p>Your resume is already built in. Each job's <strong>Tailor</strong> button shows a tailored resume and cover letter right away. Add your phone and email once so they appear on the PDFs; they stay in this browser and are never published on the site.</p>
+    <label class="fl" for="p-phone">Phone (for your PDFs)</label>
+    <input class="in" id="p-phone" autocomplete="tel">
+    <label class="fl" for="p-email">Email (for your PDFs)</label>
+    <input class="in" id="p-email" type="email" autocomplete="email">
+    <input type="hidden" id="p-name">
+    <label class="fl" for="p-resume">Override resume text for the Claude rewrite (optional; leave blank to use the built-in resume)</label>
+    <textarea class="tall" id="p-resume" placeholder="Leave blank to use the built-in resume."></textarea>
+    <label class="fl" for="p-letter">A past cover letter (optional, so new ones sound like you)</label>
+    <textarea id="p-letter"></textarea>
+    <label class="fl" for="p-extra">Anything else to always include (optional)</label>
+    <textarea id="p-extra" placeholder="e.g. 2nd-year Mechanical Engineering at TMU; available May to August 2027; design teams"></textarea>
+    <p class="hint"><strong>Two ways to tailor.</strong> Free: press <em>Copy prompt for Claude</em> on a job and paste it into claude.ai. Automatic: add an Anthropic API key below and press <em>Generate here</em> (pay-per-use, roughly a few cents a job). The key is saved only in this browser; don't use this on a shared computer.</p>
+    <label class="fl" for="p-key">Anthropic API key (optional)</label>
+    <input class="in" id="p-key" type="password" autocomplete="off" placeholder="sk-ant-…">
+    <label class="fl" for="p-model">Model</label>
+    <select class="in" id="p-model"><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (good default)</option><option value="claude-opus-5-5">Claude Opus 5.5 (best writing)</option><option value="claude-haiku-5-5">Claude Haiku 5.5 (cheapest)</option></select>
+    <div class="row"><button class="btn apply" type="button" id="p-save">Save setup</button><span id="p-saved" aria-live="polite"></span></div>
+  </details>
+  <nav class="tabs" aria-label="Status">
+    <button type="button" data-tab="todo" aria-selected="true">To apply<span class="count" id="c-todo"></span></button>
+    <button type="button" data-tab="done" aria-selected="false">Applied<span class="count" id="c-done"></span></button>
+    <button type="button" data-tab="all" aria-selected="false">All<span class="count" id="c-all"></span></button>
+  </nav>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Search company, role, city" aria-label="Search">
+    <select id="country" aria-label="Country">
+      <option value="">Canada and USA</option><option value="Canada">Canada only</option><option value="USA">USA only</option>
+    </select>
+    <select id="cat" aria-label="Area"><option value="">All areas</option></select>
+    <label><input type="checkbox" id="nocoop" checked> Hide co-op roles</label>
+    <label><input type="checkbox" id="best"> Best matches for my resume</label>
+    <label><input type="checkbox" id="fresh"> New this week</label>
+    <label><input type="checkbox" id="elig"> Hide US-citizen-only roles</label>
+    <label><input type="checkbox" id="yr2" checked> Hide roles that need 3rd year+</label>
+    <label><input type="checkbox" id="only4"> 4-month or shorter</label>
+  </div>
+  <ul class="jobs" id="list"></ul>
+  <div class="foot">
+    <p><strong>How it's sorted:</strong> jobs with a deadline first (soonest at top), then Canadian roles, then oldest postings, since many close once they get enough applicants.</p>
+    <p><strong>"⚠ says no AI":</strong> shown when a job description you paste asks applicants not to use AI or to write in their own words, or when you flag a job yourself from its Tailor panel. For those, write the cover letter yourself; the Claude rewrite is turned off for them.</p>
+    <p><strong>Co-op roles:</strong> postings with "co-op" in the title usually need you enrolled in a school co-op program (TMU's starts in 3rd year), so they're hidden by default. Untick "Hide co-op roles" to see them; one that doesn't mention a school co-op requirement may still be worth applying to.</p>
+    <p><strong>2nd-year fit:</strong> "needs 3rd year+" means the posting asks for more school or co-op experience than a 2nd-year student has; those are hidden by default. "Stretch" means it leans toward upper years (often 12 to 16-month co-ops) but is worth a try with good projects. Most 4-month summer internships take 2nd years.</p>
+    <p><strong>Reading the tags:</strong> "check posting" means the link is a company careers search or the listing came from an aggregator, so confirm the role is still open and is a Summer 2027 term. "US citizens only (likely)" marks ITAR or defense roles that usually can't hire a Canadian citizen. Other US internships need a J-1 intern visa, which the employer sponsors; ask the recruiter early.</p>
+    <p><strong>Sources:</strong> company career sites, the SimplifyJobs Summer 2027 list, the thebargon and water473 GitHub mechanical trackers, and Indeed, Glassdoor and Workopolis listings, checked November 25, 2026. Many Ontario co-ops for May 2027 post through school job boards in January, so check TMU's co-op portal too.</p>
+    <details>
+      <summary>Back up or move your ticks</summary>
+      <p>Ticks and notes live only in this browser. Copy the backup code and paste it here in another browser to move them.</p>
+      <div class="row"><button class="btn" type="button" id="copy">Copy backup code</button><span id="copied" aria-live="polite"></span></div>
+      <textarea id="restore" placeholder="Paste a backup code here" aria-label="Backup code"></textarea>
+      <div class="row"><button class="btn" type="button" id="load">Restore</button><span id="loaded" aria-live="polite"></span></div>
+    </details>
+  </div>
+</div></main>
+<div id="printarea"></div>
+<script>
+{
+const JOBS = __JOBS__;
+const KEY = "mech-board-2027";
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const TODAY = new Date("2026-11-25T12:00:00");
+const now = () => { const d = new Date(); return d > TODAY ? d : TODAY; };
+const daysLeft = d => Math.ceil((new Date(d + "T23:59:59") - now()) / 864e5);
+const isDone = j => !!(state[j.id] && state[j.id].done);
+const short = j => j.terms.length && j.terms.some(t => Number(t) <= 4);
+let tab = "todo";
+const isCoop = j => /co-?op/i.test(j.role);
+const RES = {
+  name: "Essam Rahman",
+  links: ["linkedin.com/in/essamrahman-eng", "Toronto, ON"],
+  edu: { school: "Toronto Metropolitan University", dates: "September 2025 – April 2030 (expected)",
+    degree: "Bachelor of Engineering in Mechanical Engineering – Dean's List, Fall 2025",
+    courses: [["Intro to Engineering Design (in progress)", "design"], ["Engineering Graphical Communication", "cad"], ["Materials Science", "analysis manufacturing"], ["Mechanics", "analysis"], ["Calculus I & II", ""], ["Linear Algebra", ""], ["Programming", "software"]] },
+  skills: [
+    { label: "Technical Skills", items: [["SolidWorks", "cad design"], ["Onshape", "cad design"], ["3D part and assembly modelling", "cad design"], ["mechanical system design", "design motors"], ["sheet metal design", "sheetmetal design manufacturing"], ["design for 3D printing (nozzle size and tolerances)", "design manufacturing"], ["concept sketching", "design"]] },
+    { label: "Tools & Software", items: [["MATLAB", "analysis software"], ["C", "software motors"], ["Microsoft Excel", "inspection"], ["Word", ""], ["PowerPoint", ""]] },
+    { label: "Hands-on", items: [["equipment diagnostics and repair", "repair maintenance equipment"], ["motor and pump replacement", "repair motors fluids"], ["refurbishment", "repair manufacturing"], ["power tools", "equipment"], ["customer service", "customer"]] }
+  ],
+  sections: [
+    { key: "design", title: "Design Teams", entries: [
+      { org: "Toronto Autonomous Systems Collective (TASC)", dates: "October 2026 – Present", role: "Drivetrain & Chassis Design Team Member",
+        story: "On TASC's drivetrain and chassis team, I designed the rover's sheet metal motor housing and mounting bracket and independently built the full SolidWorks assembly. I cut the motor's cantilever moment arm with a sleeve bracket and gusset, mapped the load paths, and kept every part buildable in-house with a jigsaw and drill press.",
+        bullets: [
+          ["Designed the rover's sheet metal motor housing and mounting bracket, and independently built the full SolidWorks assembly", "design cad sheetmetal vehicle"],
+          ["Cut the motor's cantilever moment arm by placing the wheel close to the suspension leg, using a sleeve bracket around the leg and a triangular gusset to resist bending from terrain loads", "design analysis vehicle"],
+          ["Mapped load paths through sleeve, gusset and housing; specified M4/M5 through-bolts two diameters from edges", "analysis design"],
+          ["Kept parts buildable in-house (jigsaw, drill press, bolted not welded) with a removable back plate for servicing", "manufacturing design maintenance sheetmetal"]] },
+      { org: "Toronto Metropolitan Aerial Vehicles (TMAV)", dates: "October 2026 – Present", role: "Mission Execution & Payload Lead-in-Training",
+        story: "On TMAV, I'm designing a modular claw and scoop on a single-motor, gear-driven robotic arm that picks up egg and pellet samples for the AEAC 2027 Student UAS Competition. I modelled it in SolidWorks and Onshape and checked the load-bearing parts with hand stress calculations.",
+        bullets: [
+          ["Designing a modular claw/scoop on a single-motor, gear-driven robotic arm that picks up egg and pellet samples for the AEAC 2027 Student UAS Competition", "design motors aero"],
+          ["Modelled the arm and interchangeable claw and scoop in SolidWorks and Onshape, and checked key load-bearing parts with hand stress calculations", "cad analysis aero"],
+          ["Designing to the competition's criteria of eggs returned uncracked and pellets returned uncrushed (30 points)", "design testing aero"]] }
+    ] },
+    { key: "work", title: "Work Experience", entries: [
+      { org: "The Home Depot", dates: "March 2026 – Present", role: "Hardware & Tool Rental Associate (Part-time)",
+        story: "At The Home Depot, I work across hardware and tool rental: advising customers on fasteners, drill bit sizing and power tools, showing them how to run equipment like concrete saws and stump grinders, and inspecting rental units to decide myself when one needs to come out of service for repair.",
+        bullets: [
+          ["Advise customers on fasteners (nuts, bolts, screws, anchors, plugs), drill bit sizing, door and gate hardware, sockets and power tools, and help plan their projects", "customer equipment"],
+          ["Rent out construction equipment such as concrete saws, floor sanders, drain snakes, insulation blowers, excavators, Dingo compact loaders and stump grinders, and show customers how to run them", "equipment customer vehicle"],
+          ["Inspect and diagnose rental tools, equipment and vans before and after each rental, and decide independently when a unit is pulled from service for repair", "inspection repair maintenance equipment testing"]] },
+      { org: "Freshly Roasted Coffee Co.", dates: "July 2024 – September 2026", role: "Service Technician (On-call)",
+        story: "As an on-call service technician at Freshly Roasted Coffee Co., I travelled across the GTA, Barrie and Orillia repairing commercial coffee machines. I traced failures to root causes like mineral buildup and powder-clogged drives, replaced motors, pumps, grinders and seals on site, and pressure-tested my repairs.",
+        bullets: [
+          ["Serviced commercial coffee machines (Freshly Roasted's NIO units) in staff rooms and retirement homes on call across the GTA, Barrie and Orillia, including water filtration filter replacements", "repair maintenance customer fluids equipment"],
+          ["Traced failures to root causes such as mineral buildup and powder-clogged drives, then replaced motors, grinders, water pumps, mixers, inlets and O-rings on site and pressure-tested for leaks", "repair maintenance motors fluids testing inspection equipment"]] },
+      { org: "Equiplus Services Ltd.", dates: "June 2024 – September 2024", role: "Warehouse Associate",
+        story: "At Equiplus, I assembled new Nestlé commercial freezers and refurbished units sent back by retail stores.",
+        bullets: [["Assembled new Nestlé commercial freezers and refurbished units sent back by retail stores", "manufacturing repair fluids"]] }
+    ] }
+  ]
+};
+const KW = [
+  [/solidworks|onshape|catia|creo|inventor|autocad|revit|\bcad\b|drafting|drawings?\b|model+ing|3d model|gd&t|tolerances?/i, "cad"],
+  [/design|prototyp|concept|develop(?:ing|ment)? (?:of )?(?:new )?(?:parts|products|components)/i, "design"],
+  [/sheet ?metal|fabricat|bracket|weld|machin(?:ed|ing)|cnc/i, "sheetmetal"],
+  [/stress|fea|finite element|analys|loads?\b|structur|calculat|sizing|selection/i, "analysis"],
+  [/manufactur|production|process|assembl|plant|lean|continuous improvement|wcm|operations|kaizen|5s/i, "manufacturing"],
+  [/maintenance|reliab|millwright|mechanic\b|uptime|preventive|predictive|downtime|cmms/i, "maintenance"],
+  [/repair|troubleshoot|diagnos|servic(?:e|ing)|technician|field|root cause|failure/i, "repair"],
+  [/inspect|quality|condition|validat|audit|compliance|standards?\b|codes?\b/i, "inspection"],
+  [/\btest|commission|verif/i, "testing"],
+  [/pump|fluid|hvac|plumbing|piping|pipe|duct|ventilat|water|thermal|refrigerat|cool|heat|fire protection|sprinkler|mechanical systems/i, "fluids"],
+  [/motor|drive|gear|actuat|mechatron|robot|automation|mechanism/i, "motors"],
+  [/customer|client|on-site|site visits?|travel|communicat/i, "customer"],
+  [/aero|uav|drone|aircraft|space|flight|satellite/i, "aero"],
+  [/vehicle|rover|automotive|rail|chassis|suspension/i, "vehicle"],
+  [/tools?\b|equipment|machine|machinery/i, "equipment"],
+  [/matlab|python|\bc\b|c\+\+|program|software|code|script/i, "software"]
+];
+const CATW = { Aerospace: "design cad analysis aero", Design: "design cad analysis sheetmetal", Manufacturing: "manufacturing design maintenance equipment inspection",
+  "Buildings/HVAC": "design cad fluids analysis inspection", Energy: "design analysis fluids inspection maintenance", Robotics: "motors design cad testing",
+  Automotive: "manufacturing vehicle design equipment", Thermal: "fluids analysis design" };
+// things a posting may ask for that are NOT on the resume -> flagged as gaps, never claimed
+const GAPS = [[/autocad/i, "AutoCAD", 1], [/revit/i, "Revit", 1], [/catia/i, "CATIA", 1], [/inventor/i, "Inventor", 1], [/\bcreo\b/i, "Creo", 1], [/\bnx\b|siemens nx/i, "Siemens NX", 1],
+  [/ansys|abaqus|\bfea\b|finite element/i, "FEA software (ANSYS etc.)", 1], [/gd&t/i, "GD&T", 0], [/python/i, "Python", 1], [/labview/i, "LabVIEW", 1], [/\bplc|ladder logic/i, "PLCs", 0],
+  [/six sigma|lean certification/i, "Six Sigma / Lean", 0], [/\bcnc|g-code|machining/i, "CNC machining", 0], [/weld/i, "welding", 0], [/hvac load|load calc|heat load|ashrae/i, "HVAC load calculations", 0],
+  [/building code|\bobc\b|nbc|csa b|nfpa/i, "building / fire codes", 0], [/statics/i, "Statics (completing Summer 2027)", 0], [/thermodynamic/i, "Thermodynamics", 0], [/fluid mechanics/i, "Fluid Mechanics", 0],
+  [/power bi|tableau|\bsql\b/i, "Power BI / SQL", 1], [/driver'?s licen[cs]e|g2|class g/i, "driver's licence (check yours)", 0], [/security clearance|controlled goods|\bcgp\b|itar/i, "security clearance / Controlled Goods", 0]];
+const HAVE = [[/solidworks/i, "SolidWorks"], [/onshape/i, "Onshape"], [/matlab/i, "MATLAB"], [/excel/i, "Excel"], [/troubleshoot|diagnos/i, "troubleshooting"],
+  [/root cause/i, "root cause analysis"], [/repair/i, "repair"], [/maintenance/i, "maintenance"], [/inspect/i, "inspection"], [/pump/i, "pumps"], [/motor/i, "motors"], [/sheet ?metal/i, "sheet metal"],
+  [/3d print|additive/i, "3D printing"], [/assembl/i, "assembly"], [/customer|client/i, "customer service"], [/stress|load/i, "load / stress analysis"], [/design/i, "design"], [/cad\b|model/i, "CAD modelling"],
+  [/power tools|hand tools/i, "power tools"], [/test/i, "testing"], [/team/i, "teamwork"], [/water|plumbing|fluid/i, "water / fluid systems"]];
+const NOAI_RE = /(?:not|n't|never|prohibit\w*|discourag\w*|avoid|without|refrain from|may not|must not|disqualif\w*|reject\w*|flag\w*|detect\w*)[^.]{0,90}\b(?:AI|A\.I\.|artificial intelligence|ChatGPT|generative|gen ?AI|LLM|large language model|AI[- ]generated|AI[- ]written|AI tools)\b|\b(?:AI|artificial intelligence|ChatGPT|generative AI|AI[- ]generated|AI tools)\b[^.]{0,90}(?:not (?:be )?(?:permitted|allowed|accepted)|prohibited|disqualif\w*|will be rejected|is not acceptable|should not be used|discouraged)|\bown words\b|written by (?:you|the applicant|yourself)|authentic(?:ally)? (?:written|in your own)/i;
+const noAI = (j, jd) => !!((state[j.id] && state[j.id].noai) || j.noai || NOAI_RE.test(jd || (state[j.id] && state[j.id].jd) || ""));
+function readPosting(j, jd) {
+  const title = j.role, body = (j.note || "") + " " + (jd || "");
+  const cnt = (re, s) => (s.match(new RegExp(re.source, "gi")) || []).length;
+  const handsRe = /technician|maintenance|millwright|mechanic\b|reliab|field service|service tech|repair|operator|tool room|mold tech|condition assessor|printing maintenance/i;
+  const designRe = /design|drafting|cad\b|autocad|revit|solidworks|engineer(?:ing)?\b|analysis|prototyp|product|project|systems|validation|process/i;
+  let hands = cnt(handsRe, title) * 4 + Math.min(cnt(handsRe, body), 6);
+  let design = cnt(designRe, title) * 3 + Math.min(cnt(designRe, body), 6) + 2; // engineering roles lean on engineering projects by default
+  if (/technician|millwright|mechanic\b|maintenance|reliab|tool room|mold tech/i.test(title)) hands += 4;
+  const gaps = GAPS.filter(g => g[0].test(title + " " + body)).map(g => ({ name: g[1], tool: !!g[2] }));
+  const have = [...new Set(HAVE.filter(h => h[0].test(body + " " + title)).map(h => h[1]))];
+  return { type: hands > design ? "hands" : "design", hands, design, gaps, have, hasJD: !!(jd && jd.trim().length > 80) };
+}
+function weights(j, jd, rp) {
+  const w = {}; const add = (tags, n) => tags.split(" ").filter(Boolean).forEach(t => w[t] = (w[t] || 0) + n);
+  add(CATW[j.cat] || "design cad", 2);
+  add(rp.type === "hands" ? "repair maintenance equipment inspection testing" : "design cad analysis", 3);
+  const txt = j.role + " " + j.role + " " + (j.note || "") + " " + (jd || "");
+  KW.forEach(([re, t]) => { const m = txt.match(new RegExp(re.source, "gi")); if (m) w[t] = (w[t] || 0) + Math.min(m.length, 5) * (rp.hasJD ? 1 : 2); });
+  return w;
+}
+const score = (tags, w) => tags.split(" ").filter(Boolean).reduce((a, t) => a + (w[t] || 0), 0);
+function tailorData(j, jd) {
+  const rp = readPosting(j, jd), w = weights(j, jd, rp);
+  const sortItems = (arr, lead) => arr.map((x, i) => [x, i, score(x[1], w) + (lead && i === 0 ? 6 : 0)]).sort((a, b) => b[2] - a[2] || a[1] - b[1]).map(x => x[0]);
+  const entScore = e => e.bullets.map(b => score(b[1], w)).sort((a, b) => b - a).slice(0, 2).reduce((a, b) => a + b, 0);
+  let sections = RES.sections.map(s => ({ ...s, entries: s.entries.map(e => ({ ...e, sec: s.key, bullets: sortItems(e.bullets, true), sc: entScore(e) })) }));
+  // design teams keep their best entry first; work stays reverse-chronological
+  sections[0].entries.sort((a, b) => b.sc - a.sc);
+  if (rp.type === "hands") sections.reverse();
+  let skills = RES.skills.map(g => ({ ...g, items: sortItems(g.items), sc: Math.max(...g.items.map(x => score(x[1], w))) }));
+  if (rp.type === "hands") skills = [skills[2], skills[0], skills[1]];
+  const courses = sortItems(RES.edu.courses);
+  const best = key => sections.find(s => s.key === key).entries.slice().sort((a, b) => b.sc - a.sc)[0];
+  const lead = rp.type === "hands" ? best("work") : best("design"), second = rp.type === "hands" ? best("design") : best("work");
+  return { sections, skills, courses, stories: [lead, second], rp, lead: sections[0].title };
+}
+const OPEN = {
+  hands: { _: "Most of my experience so far has been diagnosing and repairing real equipment, and I'm looking for a role where I can keep doing that while learning the engineering behind it.",
+    "Buildings/HVAC": "Most of my experience so far has been diagnosing and repairing water and fluid equipment on site, and this role would let me keep doing that hands-on work while learning how building systems are engineered.",
+    Manufacturing: "Most of my experience so far has been keeping real equipment running, and I'm looking for a role close to production where I can learn how a plant keeps its equipment reliable." },
+  design: { _: "I enjoy taking a part from a sketch to a CAD model to something that can actually be built, and this role would let me do more of that alongside experienced engineers.",
+    "Buildings/HVAC": "I've spent two years repairing water and fluid systems after they were installed, and I'm interested in the other side of that work: how mechanical, plumbing and building systems are designed and specified in the first place.",
+    Manufacturing: "I'm interested in engineering that happens close to production, where a design decision has to hold up on real equipment, and my mix of design-team work and hands-on repair fits that well.",
+    Aerospace: "My design-team work on a competition drone and a rover has me most interested in hardware that has to be light, strong and reliable, which is what draws me to this role.",
+    Robotics: "I enjoy mechanisms that move, and designing a motor-driven robotic arm and a rover drivetrain on my design teams has me eager to work on real robotic and automated systems.",
+    Energy: "I'm drawn to energy work because reliability matters so much, and my design-team projects and field repair work have taught me to design and check parts carefully.",
+    Automotive: "Designing a rover drivetrain and handling heavy equipment every day has made me keen to work on vehicles and the processes that build them.",
+    Thermal: "My hands-on work with pumps, water systems and cooling equipment has made me curious about the thermal design behind them." } };
+const cleanRole = r => r.replace(/\s*[\(\[][^\)\]]*2027[^\)\]]*[\)\]]/g, "").replace(/^(?:Summer|Fall|Winter)? ?2027:?\s*/i, "").replace(/\s*-\s*(?:Spring\/)?Summer(?:\/Fall)? 2027/i, "").replace(/\s*\((?:May|Summer)[^)]*\)/i, "").replace(/\s*-?\s*(?:Summer )?2027\s*$/i, "").trim();
+const joinOr = a => a.length > 1 ? a.slice(0, -1).join(", ") + " or " + a[a.length - 1] : a[0];
+function letterText(j, t, contact) {
+  const rp = t.rp, loc = j.loc ? " in " + j.loc.replace(/\s*\(.*?\)/g, "") : "";
+  const term = j.terms && j.terms.length ? " for a " + joinOr(j.terms) + "-month term" : "";
+  const open = (OPEN[rp.type][j.cat] || OPEN[rp.type]._);
+  const tools = rp.gaps.filter(g => g.tool).map(g => g.name.replace(/ \(.*\)/, ""));
+  const gapLine = tools.length ? " I haven't used " + (tools.length > 1 ? tools.slice(0, -1).join(", ") + " or " + tools.slice(-1) : tools[0]) + " yet, but I picked up SolidWorks and Onshape quickly and would be glad to learn " + (tools.length > 1 ? "them" : "it") + " on your team." : "";
+  const bridge = rp.type === "hands" ? " That work taught me to find the real cause of a problem before replacing parts." : " Working on equipment in the field has taught me to design parts with the person who has to build and service them in mind.";
+  return ["Dear Hiring Team,",
+    "I'm a second-year Mechanical Engineering student at Toronto Metropolitan University, applying for the " + cleanRole(j.role) + " position at " + j.company + loc + " for Summer 2027. " + open,
+    t.stories[0].story,
+    t.stories[1].story + bridge + gapLine,
+    "I'm available starting in May 2027" + term + ". Thank you for considering my application. I'd appreciate the chance to discuss how I can contribute to your team.",
+    "Sincerely,\n" + RES.name + (contact.phone || contact.email ? "\n" + [contact.phone, contact.email].filter(Boolean).join(" | ") : "")].join("\n\n");
+}
+function fitHTML(t) {
+  const rp = t.rp;
+  const li = (a) => a.length ? a.map(esc).join(", ") : "—";
+  return '<div class="fit"><p><b>Reads as:</b> ' + (rp.type === "hands" ? "hands-on / technician role, so Work Experience and hands-on skills lead" : "engineering / design role, so Design Teams lead") +
+    (rp.hasJD ? "" : ' <span class="status">(based on the title and notes only; paste the job description for a closer read)</span>') + '</p>' +
+    '<p><b>Posting asks for, and you have:</b> ' + li(rp.have) + '</p>' +
+    '<p><b>Not on your resume (don\'t claim; prepare or mention willingness to learn):</b> ' + li(rp.gaps.map(g => g.name)) + '</p></div>';
+}
+
+const capFirst = x => x.charAt(0).toUpperCase() + x.slice(1);
+const fmtPhone = p => { const d = (p || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, ""); return d.length === 10 ? "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6) : p; };
+function resumeHTML(t, contact) {
+  const c = [contact.phone, contact.email, ...RES.links].filter(Boolean).map(esc).join("  |  ");
+  let h = '<div class="rdoc"><div class="rn">' + esc(RES.name) + '</div><div class="rc">' + c + '</div>';
+  h += '<h4>Education</h4><div class="rr"><b>' + esc(RES.edu.school) + '</b><b>' + esc(RES.edu.dates) + '</b></div><div class="ri">' + esc(RES.edu.degree) + '</div><ul><li>Relevant courses: ' + t.courses.map(x => esc(x[0])).join(", ") + '</li></ul>';
+  h += '<h4>Skills</h4>' + t.skills.map(g => '<p><b>' + esc(g.label) + ':</b> ' + esc(capFirst(g.items.map(x => x[0]).join(", "))) + '</p>').join("");
+  t.sections.forEach(s => {
+    h += '<h4>' + esc(s.title) + '</h4>';
+    s.entries.forEach(e => { h += '<div class="rr"><b>' + esc(e.org) + '</b><b>' + esc(e.dates) + '</b></div><div class="ri">' + esc(e.role) + '</div><ul>' + e.bullets.map(b => '<li>' + esc(b[0]) + '</li>').join("") + '</ul>'; });
+  });
+  return h + '</div>';
+}
+function resumeText(t, contact) {
+  const L = [RES.name, [contact.phone, contact.email, ...RES.links].filter(Boolean).join(" | "), "", "EDUCATION", RES.edu.school + " — " + RES.edu.dates, RES.edu.degree, "- Relevant courses: " + t.courses.map(x => x[0]).join(", "), "", "SKILLS"];
+  t.skills.forEach(g => L.push(g.label + ": " + capFirst(g.items.map(x => x[0]).join(", "))));
+  t.sections.forEach(s => { L.push("", s.title.toUpperCase()); s.entries.forEach(e => { L.push(e.org + " — " + e.dates, e.role); e.bullets.forEach(b => L.push("- " + b[0])); }); });
+  return L.join("\n");
+}
+
+const PKEY = "mech-board-2027-profile";
+let prof = {};
+try { prof = JSON.parse(localStorage.getItem(PKEY) || "{}") || {}; } catch (e) { prof = {}; }
+const openT = new Set();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function md(src) {
+  const inl = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+  let h = "", inList = false;
+  for (const raw of String(src).split("\n")) {
+    const l = raw.trimEnd();
+    const li = l.match(/^\s*[-•*]\s+(.*)$/);
+    if (li) { if (!inList) { h += "<ul>"; inList = true; } h += "<li>" + inl(li[1]) + "</li>"; continue; }
+    if (inList) { h += "</ul>"; inList = false; }
+    const hd = l.match(/^(#{1,3})\s+(.*)$/);
+    if (hd) h += "<h" + hd[1].length + ">" + inl(hd[2]) + "</h" + hd[1].length + ">";
+    else if (l.trim()) h += "<p>" + inl(l) + "</p>";
+  }
+  return h + (inList ? "</ul>" : "");
+}
+function buildPrompt(j, jd, masterText) {
+  return [
+    "You are helping a 2nd-year mechanical engineering student (TMU) apply for a Summer 2027 role. Write a tailored one-page resume and a cover letter for the job below.",
+    "",
+    "Rules:",
+    "- Use ONLY facts from my master resume and extra notes. Never invent jobs, projects, numbers, tools, awards or dates. You may reorder, cut, and reword bullets to match the posting's language, and choose which projects to lead with.",
+    "- Resume: one page, Canadian spelling, strong action verbs, quantify only where my resume already gives numbers. Put the most relevant section first. Skills section lists what I actually have that the posting asks for first.",
+    "- Cover letter: 250 to 320 words, addressed to the hiring team, specific to this company and role using only what the posting says, naming 2 or 3 of my real experiences that fit. No clichés like 'I am writing to express my interest'.",
+    "- Before writing, read the full job description carefully and work out (privately, don't output this): the 5 to 8 things this role most needs, which of my experiences prove each one, whether this is mainly a design/engineering role or a hands-on/technician role, and which section should therefore lead. Mirror the posting's own wording where it truthfully describes what I did.",
+    "- Cover letter voice: plain, specific and human, like a capable student wrote it. Use one concrete story (a real failure I diagnosed, or a real design decision) rather than adjectives. Avoid stock phrases such as 'passionate', 'exactly where I want to grow', 'leverage', 'dynamic', 'I am confident that'.",
+    "- If the posting asks for something I clearly don't have, don't claim it; for software I lack, the letter may say I haven't used it yet but learn CAD tools quickly. After the letter add a line 'GAPS:' listing those items so I can prepare.",
+    "- Format exactly like this, in plain Markdown (# for my name, ## for section headings, - for bullets):",
+    "===RESUME===",
+    "(resume)",
+    "===COVER LETTER===",
+    "(letter)",
+    "",
+    "JOB",
+    "Company: " + j.company,
+    "Role: " + j.role,
+    "Location: " + j.loc + " (" + j.country + ")",
+    "Area: " + j.cat,
+    "Posting link: " + j.url,
+    "What I know about it: " + (j.note || "(nothing extra)"),
+    "Full job description: " + (jd && jd.trim() ? "\n" + jd.trim() : "(not pasted; rely on the role title and notes above, and keep claims general)"),
+    "",
+    "MY MASTER RESUME",
+    masterText || prof.resume || "(missing)",
+    prof.extra ? "\nEXTRA NOTES ABOUT ME\n" + prof.extra : "",
+    prof.letter ? "\nA PAST COVER LETTER OF MINE (match its voice, not its content)\n" + prof.letter : ""
+  ].join("\n");
+}
+function split(text) {
+  const r = text.split("===COVER LETTER===");
+  return { resume: (r[0] || "").replace("===RESUME===", "").trim(), letter: (r[1] || "").trim() };
+}
+function printDoc(html, name) {
+  const pa = document.getElementById("printarea"); pa.innerHTML = html;
+  const old = document.title; document.title = name;
+  try { window.print(); } catch (e) {}
+  setTimeout(() => { document.title = old; }, 500);
+}
+function contactInfo() { return { phone: fmtPhone((prof.phone || "").trim()), email: (prof.email || "").trim() }; }
+function tailorPanel(j) {
+  const s = state[j.id] || {};
+  const box = el("div", "tailor");
+  box.append(el("h3", null, "Tailored for " + j.company));
+  const hint = el("p", "status", "Built from your resume. It reads the title, notes and any job description you paste, decides whether this is a design or hands-on role, reorders sections, bullets and skills to match, and flags what the posting asks for that you don't have. It never adds anything that isn't on your resume. Read it over before sending.");
+  box.append(hint);
+  const c = contactInfo();
+  if (!c.phone && !c.email) { const n = el("p", "status", "Tip: add your phone and email once in Resume tailoring setup (top of the page) so they appear on the PDF. They're kept in your browser, not on the public site."); box.append(n); }
+  const jdl = el("label", "fl", "Optional: paste the job description to tailor more closely"); jdl.htmlFor = "jd-" + j.id;
+  const jd = el("textarea"); jd.id = "jd-" + j.id; jd.value = s.jd || ""; jd.placeholder = "Open the posting with Apply ↗, copy the description, paste it here. The preview updates as you paste.";
+  box.append(jdl, jd);
+  let which = "resume", useAI = false;
+  const seg = el("div", "seg"); const b1 = el("button", null, "Resume"), b2 = el("button", null, "Cover letter"), b3 = el("button", null, "Claude version");
+  [b1, b2, b3].forEach(b => b.type = "button");
+  seg.append(b1, b2, b3);
+  const doc = el("div", "doc"); const tools = el("div", "row");
+  const copyB = el("button", "btn", "Copy text"), pdfB = el("button", "btn apply", "Save as PDF"); copyB.type = pdfB.type = "button";
+  const msg = el("span", "status"); msg.setAttribute("aria-live", "polite"); tools.append(pdfB, copyB, msg);
+  const warn = el("div", "noai"); const flagB = el("button", "btn", ""); flagB.type = "button";
+  const drawWarn = () => {
+    const on = noAI(j, jd.value);
+    warn.replaceChildren();
+    if (on) warn.append(el("p", null, "⚠ This posting asks applicants not to use AI or to write in their own words. Write your cover letter yourself: use the preview below only as a checklist of which experiences to mention, not as text to copy."));
+    const manual = !!(state[j.id] && state[j.id].noai);
+    flagB.textContent = manual ? "Unflag \"says no AI\"" : "Flag: posting says no AI";
+    warn.hidden = !on; 
+  };
+  flagB.onclick = () => { const x = state[j.id] || {}; x.noai = !x.noai; state[j.id] = x; save(); drawWarn(); render(); };
+  const fit = el("div"); box.append(warn, fit, seg, doc, tools);
+  const flagRow = el("div", "row"); flagRow.append(flagB, el("span", "status", "Spotted a no-AI line in the posting? Flag it so this job shows a warning."));
+  let t = tailorData(j, jd.value);
+  const cur = () => {
+    const ai = (state[j.id] || {}).tailored;
+    if (which === "ai") return ai ? { html: '<div class="mdout">' + md(ai.resume) + '<hr>' + md(ai.letter) + '</div>', text: ai.resume + "\n\n" + ai.letter } : { html: '<p class="status">No Claude version yet. Use the options below to make one.</p>', text: "" };
+    if (which === "letter") { const lt = letterText(j, t, contactInfo()); return { html: '<div class="ldoc">' + lt.split("\n\n").map(p => "<p>" + esc(p).replace(/\n/g, "<br>") + "</p>").join("") + "</div>", text: lt }; }
+    return { html: resumeHTML(t, contactInfo()), text: resumeText(t, contactInfo()) };
+  };
+  const draw = () => { drawWarn(); fit.innerHTML = fitHTML(t); [b1, b2, b3].forEach((b, i) => b.setAttribute("aria-pressed", String(["resume", "letter", "ai"][i] === which))); doc.innerHTML = cur().html; };
+  b1.onclick = () => { which = "resume"; draw(); }; b2.onclick = () => { which = "letter"; draw(); }; b3.onclick = () => { which = "ai"; draw(); };
+  jd.oninput = () => { const x = state[j.id] || {}; x.jd = jd.value; state[j.id] = x; save(); t = tailorData(j, jd.value); draw(); };
+  copyB.onclick = async () => { try { await navigator.clipboard.writeText(cur().text); msg.textContent = "Copied."; } catch (e) { msg.textContent = "Copy blocked; select the text instead."; } };
+  pdfB.onclick = () => { const nm = RES.name.replace(/\s+/g, "") + "_" + (which === "letter" ? "CoverLetter" : "Resume") + "_" + j.company.replace(/[^A-Za-z0-9]+/g, ""); printDoc(cur().html, nm); msg.textContent = "In the print window choose 'Save as PDF'."; };
+  draw();
+  box.append(flagRow);
+  // optional Claude rewrite
+  const det = el("details", "ai"); const sm = el("summary", null, "Optional: have Claude rewrite it more closely"); det.append(sm);
+  const row = el("div", "row"); const status = el("span", "status"); status.setAttribute("aria-live", "polite");
+  const cp = el("button", "btn", "Copy prompt for Claude"); cp.type = "button";
+  const gen = el("button", "btn", "Generate here (API key)"); gen.type = "button";
+  row.append(cp, gen, status); det.append(row);
+  const paste = el("textarea"); paste.placeholder = "Used claude.ai? Paste its full reply (starting ===RESUME===) here, then Save.";
+  const keep = el("button", "btn", "Save pasted reply"); keep.type = "button"; det.append(paste, el("div", "row")); det.lastChild.append(keep);
+  box.append(det);
+  const master = () => (prof.resume && prof.resume.trim()) ? prof.resume : resumeText(tailorData(j, ""), contactInfo());
+  const store = text => { const x = state[j.id] || {}; x.tailored = Object.assign(split(text), { date: new Date().toISOString().slice(0, 10) }); state[j.id] = x; save(); which = "ai"; draw(); };
+  cp.onclick = async () => { if (noAI(j, jd.value)) { status.textContent = "This posting says no AI, so the Claude rewrite is turned off for it."; return; } const p = buildPrompt(j, jd.value, master()); try { await navigator.clipboard.writeText(p); status.textContent = "Copied. Paste it into a new claude.ai chat."; } catch (e) { paste.value = p; status.textContent = "Copy blocked; the prompt is in the box below."; } };
+  keep.onclick = () => { if (!paste.value.includes("===COVER LETTER===")) { status.textContent = "That reply is missing the ===COVER LETTER=== marker."; return; } store(paste.value); paste.value = ""; status.textContent = "Saved; see the Claude version tab."; };
+  gen.onclick = async () => {
+    if (noAI(j, jd.value)) { status.textContent = "This posting says no AI, so the Claude rewrite is turned off for it."; return; }
+    if (!prof.key) { status.textContent = "No API key in setup. Use Copy prompt instead, or add a key."; return; }
+    gen.disabled = true; status.textContent = "Writing… (about 30 seconds)";
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": prof.key, "anthropic-version": "2023-06-01", "content-type": "application/json", "anthropic-dangerous-direct-browser-access": "true" }, body: JSON.stringify({ model: prof.model || "claude-sonnet-5-5", max_tokens: 4000, messages: [{ role: "user", content: buildPrompt(j, jd.value, master()) }] }) });
+      const d = await r.json(); if (!r.ok) throw new Error((d.error && d.error.message) || ("HTTP " + r.status));
+      const text = (d.content || []).filter(x => x.type === "text").map(x => x.text).join("\n");
+      if (!text.includes("===COVER LETTER===")) throw new Error("Reply came back in an unexpected format; try again.");
+      store(text); status.textContent = "Done; see the Claude version tab.";
+    } catch (e) { status.textContent = "Didn't work: " + e.message; }
+    gen.disabled = false;
+  };
+  return box;
+}
+
+function loadProfile() {
+  document.getElementById("p-name").value = prof.name || "";
+  document.getElementById("p-phone").value = prof.phone || "";
+  document.getElementById("p-email").value = prof.email || "";
+  document.getElementById("p-resume").value = prof.resume || "";
+  document.getElementById("p-letter").value = prof.letter || "";
+  document.getElementById("p-extra").value = prof.extra || "";
+  document.getElementById("p-key").value = prof.key || "";
+  document.getElementById("p-model").value = prof.model || "claude-sonnet-5-5";
+  document.getElementById("setup-state").textContent = (prof.phone || prof.email) ? "· contact saved" : "· add phone and email";
+}
+document.getElementById("p-save").onclick = () => {
+  prof = { phone: document.getElementById("p-phone").value.trim(), email: document.getElementById("p-email").value.trim(), name: "", resume: document.getElementById("p-resume").value, letter: document.getElementById("p-letter").value, extra: document.getElementById("p-extra").value, key: document.getElementById("p-key").value.trim(), model: document.getElementById("p-model").value };
+  try { localStorage.setItem(PKEY, JSON.stringify(prof)); document.getElementById("p-saved").textContent = "Saved in this browser."; }
+  catch (e) { document.getElementById("p-saved").textContent = "This browser blocked saving; it will last until you close the tab."; }
+  loadProfile();
+};
+loadProfile();
+
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+const cats = [...new Set(JOBS.map(j => j.cat))].sort();
+const catSel = document.getElementById("cat");
+cats.forEach(c => { const o = el("option", null, c); o.value = c; catSel.append(o); });
+
+const isNew = j => j.added && (Date.now() - new Date(j.added + "T00:00:00")) / 864e5 <= 7;
+const rank = j => [j.deadline ? 0 : 1, j.deadline || "9999", j.pick || 9, j.country === "Canada" ? 0 : 1, j.posted || "9999"];
+const sorted = JOBS.slice().sort((a, b) => { const x = rank(a), y = rank(b); for (let i = 0; i < x.length; i++) { if (x[i] < y[i]) return -1; if (x[i] > y[i]) return 1; } return 0; });
+
+function card(j) {
+  const li = el("li", "job" + (isDone(j) ? " done" : "") + (j.pick === 1 ? " picked" : ""));
+  const cb = el("input", "tick"); cb.type = "checkbox"; cb.checked = isDone(j);
+  cb.setAttribute("aria-label", "Applied to " + j.company + " " + j.role);
+  cb.onchange = () => {
+    const s = state[j.id] || {};
+    s.done = cb.checked; s.date = cb.checked ? new Date().toISOString().slice(0, 10) : "";
+    state[j.id] = s; save(); render();
+  };
+  li.append(cb);
+  const body = el("div");
+  const top = el("div", "top"); top.append(el("span", "co", j.company), el("span", "role", j.role)); body.append(top);
+  const m = el("div", "meta");
+  m.append(el("span", "chip " + (j.country === "USA" ? "us" : "ca"), j.country), el("span", null, j.loc));
+  if (j.terms.length) j.terms.forEach(t => m.append(el("span", "chip" + (Number(t) <= 4 ? " four" : ""), t + " mo")));
+  else m.append(el("span", "chip", "term not stated"));
+  m.append(el("span", "chip", j.cat));
+  if (j.deadline) {
+    const n = daysLeft(j.deadline);
+    m.append(el("span", "chip due" + (n <= 7 ? " soon" : ""), n < 0 ? "deadline passed " + j.deadline : n === 0 ? "due today" : "due " + j.deadline + " · " + n + "d"));
+  }
+  if (j.usp) m.append(el("span", "chip usp", "US citizens only (likely)"));
+  if (noAI(j)) m.append(el("span", "chip usp", "⚠ says no AI"));
+  if (isNew(j)) m.append(el("span", "chip new", "new " + j.added.slice(5)));
+  if (j.pick === 1) m.append(el("span", "chip top", "★ top match"));
+  if (j.pick === 2) m.append(el("span", "chip ok", "good match"));
+  if (j.yr === "no") m.append(el("span", "chip usp", "needs 3rd year+"));
+  if (j.yr === "stretch") m.append(el("span", "chip check", "stretch for 2nd year"));
+  if (j.check) m.append(el("span", "chip check", "check posting"));
+  if (j.posted) m.append(el("span", null, "posted " + j.posted));
+  if (isDone(j) && state[j.id].date) m.append(el("span", "chip ok", "applied " + state[j.id].date));
+  body.append(m);
+  const links = el("div", "links");
+  const a = el("a", "btn apply", "Apply ↗"); a.href = j.url; a.target = "_blank"; a.rel = "noopener"; links.append(a);
+  const nb = el("button", "btn", (state[j.id] && state[j.id].note) ? "My notes ✎" : "Add notes"); nb.type = "button";
+  const tb = el("button", "btn", "Tailor resume + letter"); tb.type = "button";
+  tb.setAttribute("aria-expanded", String(openT.has(j.id)));
+  links.append(nb, tb); body.append(links);
+  if (j.pickwhy) body.append(el("p", "why", "Why it fits you: " + j.pickwhy));
+  if (j.note) body.append(el("p", "note", j.note));
+  if (j.yrwhy) body.append(el("p", "note", (j.yr === "ok" ? "2nd year: " : "2nd year: ") + j.yrwhy));
+  body.append(el("p", "src", "Found on: " + j.source));
+  const ta = el("textarea"); ta.hidden = !(state[j.id] && state[j.id].note);
+  ta.value = (state[j.id] && state[j.id].note) || ""; ta.placeholder = "Contacts, interview dates, what you sent…";
+  ta.setAttribute("aria-label", "Notes for " + j.company);
+  ta.oninput = () => { const s = state[j.id] || {}; s.note = ta.value; state[j.id] = s; save(); };
+  nb.onclick = () => { ta.hidden = !ta.hidden; if (!ta.hidden) ta.focus(); };
+  body.append(ta);
+  const slot = el("div"); body.append(slot);
+  const showT = () => { slot.replaceChildren(); if (openT.has(j.id)) slot.append(tailorPanel(j)); tb.setAttribute("aria-expanded", String(openT.has(j.id))); };
+  tb.onclick = () => { openT.has(j.id) ? openT.delete(j.id) : openT.add(j.id); showT(); };
+  showT();
+  li.append(body);
+  return li;
+}
+
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const country = document.getElementById("country").value;
+  const cat = catSel.value;
+  const elig = document.getElementById("elig").checked;
+  const best = document.getElementById("best").checked;
+  const nocoop = document.getElementById("nocoop").checked;
+  const yr2 = document.getElementById("yr2").checked;
+  const only4 = document.getElementById("only4").checked;
+  const done = sorted.filter(isDone), todo = sorted.filter(j => !isDone(j));
+  document.getElementById("n-open").textContent = todo.length;
+  document.getElementById("n-done").textContent = done.length;
+  document.getElementById("n-soon").textContent = todo.filter(j => j.deadline && daysLeft(j.deadline) >= 0 && daysLeft(j.deadline) <= 14).length;
+  document.getElementById("n-ca").textContent = todo.filter(j => j.country === "Canada" && j.yr !== "no").length;
+  document.getElementById("n-ok").textContent = todo.filter(j => j.pick).length;
+  document.getElementById("c-todo").textContent = todo.length;
+  document.getElementById("c-done").textContent = done.length;
+  document.getElementById("c-all").textContent = JOBS.length;
+  let rows = tab === "todo" ? todo : tab === "done" ? done : sorted;
+  if (country) rows = rows.filter(j => j.country === country);
+  if (cat) rows = rows.filter(j => j.cat === cat);
+  if (elig) rows = rows.filter(j => !j.usp);
+  if (best) rows = rows.filter(j => j.pick);
+  if (document.getElementById("fresh").checked) rows = rows.filter(isNew);
+  if (nocoop) rows = rows.filter(j => !isCoop(j));
+  if (yr2) rows = rows.filter(j => j.yr !== "no");
+  if (only4) rows = rows.filter(short);
+  if (q) rows = rows.filter(j => (j.company + " " + j.role + " " + j.loc + " " + j.cat + " " + j.note).toLowerCase().includes(q));
+  const list = document.getElementById("list"); list.replaceChildren();
+  if (!rows.length) list.append(el("li", "empty", tab === "done" ? "Nothing ticked yet." : "No jobs match these filters."));
+  rows.forEach(j => list.append(card(j)));
+}
+
+document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+  render();
+});
+["q", "country", "cat", "nocoop", "best", "fresh", "elig", "yr2", "only4"].forEach(id => { const e = document.getElementById(id); e.addEventListener(id === "q" ? "input" : "change", render); });
+document.getElementById("copy").onclick = async () => {
+  const out = document.getElementById("copied");
+  try { await navigator.clipboard.writeText(btoa(unescape(encodeURIComponent(JSON.stringify(state))))); out.textContent = "Copied."; }
+  catch (e) { document.getElementById("restore").value = btoa(unescape(encodeURIComponent(JSON.stringify(state)))); out.textContent = "Couldn't copy; the code is in the box below."; }
+};
+document.getElementById("load").onclick = () => {
+  const out = document.getElementById("loaded");
+  try { const s = JSON.parse(decodeURIComponent(escape(atob(document.getElementById("restore").value.trim())))); if (typeof s !== "object" || !s) throw 0; state = s; save(); render(); out.textContent = "Restored."; }
+  catch (e) { out.textContent = "That code didn't work."; }
+};
+render();
+}
+</script>
+</body>
+</html>
