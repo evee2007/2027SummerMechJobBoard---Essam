@@ -119,7 +119,8 @@ def same(a, b):
     ta, tb = tokens(a["role"]), tokens(b["role"])
     if not ta or not tb:
         return False
-    return ta <= tb or tb <= ta or len(ta & tb) / len(ta | tb) >= 0.6
+    small = min(len(ta), len(tb))
+    return (small >= 2 and (ta <= tb or tb <= ta)) or len(ta & tb) / len(ta | tb) >= 0.6
 
 
 def is_mech(title):
