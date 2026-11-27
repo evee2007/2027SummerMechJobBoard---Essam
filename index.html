@@ -603,14 +603,16 @@ function render() {
   document.getElementById("c-done").textContent = done.length;
   document.getElementById("c-all").textContent = JOBS.length;
   let rows = tab === "todo" ? todo : tab === "done" ? done : sorted;
-  if (country) rows = rows.filter(j => j.country === country);
-  if (cat) rows = rows.filter(j => j.cat === cat);
-  if (elig) rows = rows.filter(j => !j.usp);
-  if (best) rows = rows.filter(j => j.pick);
-  if (document.getElementById("fresh").checked) rows = rows.filter(isNew);
-  if (nocoop) rows = rows.filter(j => !isCoop(j));
-  if (yr2) rows = rows.filter(j => j.yr !== "no");
-  if (only4) rows = rows.filter(short);
+  // applied jobs always show on the Applied tab, whatever the filters say
+  const filt = tab !== "done";
+  if (filt && country) rows = rows.filter(j => j.country === country);
+  if (filt && cat) rows = rows.filter(j => j.cat === cat);
+  if (filt && elig) rows = rows.filter(j => !j.usp);
+  if (filt && best) rows = rows.filter(j => j.pick);
+  if (filt && document.getElementById("fresh").checked) rows = rows.filter(isNew);
+  if (filt && nocoop) rows = rows.filter(j => !isCoop(j));
+  if (filt && yr2) rows = rows.filter(j => j.yr !== "no");
+  if (filt && only4) rows = rows.filter(short);
   if (q) rows = rows.filter(j => (j.company + " " + j.role + " " + j.loc + " " + j.cat + " " + j.note).toLowerCase().includes(q));
   const list = document.getElementById("list"); list.replaceChildren();
   if (!rows.length) list.append(el("li", "empty", tab === "done" ? "Nothing ticked yet." : "No jobs match these filters."));
