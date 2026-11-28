@@ -517,5 +517,27 @@
   "pickwhy": "",
   "auto": true,
   "added": "2026-11-26"
+ },
+ {
+  "id": "united-parcel-service-industrial-engineering-intern-united-states",
+  "company": "United Parcel Service",
+  "role": "Industrial Engineering Intern",
+  "loc": "United States",
+  "country": "USA",
+  "terms": [],
+  "deadline": "",
+  "posted": "2026-11-24",
+  "url": "https://hcmportal.wd5.myworkdayjobs.com/en-US/Search/job/US---UPS-CORPORATE-OFFICES-GACOR/XMLNAME-2027-Americas-Region-Industrial-Engineering-Spring-Intern_R26043805",
+  "check": false,
+  "usp": false,
+  "cat": "Manufacturing",
+  "source": "GitHub list: SimplifyJobs Summer 2027 (auto)",
+  "note": "",
+  "yr": "ok",
+  "yrwhy": "Found automatically: check the posting for year requirements.",
+  "pick": 0,
+  "pickwhy": "",
+  "auto": true,
+  "added": "2026-11-28"
  }
 ]
